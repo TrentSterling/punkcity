@@ -3,10 +3,11 @@
  * No assets or implementation code are copied from the reference generators.
  */
 import * as THREE from 'three';
+import {createScifiKit} from './scifi.js';
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const FLOOR=.28,LEVEL=16,PATH=7,PLAZA=12;
 const round=n=>Math.round(n*1000)/1000;
-export const URBAN_REVISION='0.3.0';
+export const URBAN_REVISION='0.4.0';
 
 export function planUrbanism(city){
   city.version=URBAN_REVISION;city.upperLinks=[];
@@ -86,6 +87,7 @@ export function planUrbanism(city){
 
 export function compileUrbanism(api,city){
   const {B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo}=api;
+  const sci=createScifiKit(api,city);
   const records={entrances:[],stairs:[],supports:[],access:[],context:[],roofs:[]};
   const rands=s=>{let a=s>>>0;return()=>{a+=0x6d2b79f5;let t=Math.imul(a^a>>>15,1|a);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296;};};
   const edge=(x1,z1,x2,z2,y)=>{if(Math.hypot(x2-x1,z2-z1)>.15)rail(x1,z1,x2,z2,y);};
@@ -111,20 +113,7 @@ export function compileUrbanism(api,city){
     sign(text,x,y+4.65,z+.3,w+1,1,0,upper?'#91b9ba':'#c3b28e');
     records.entrances.push({building:m.id,position:[x,y,z+.5],level:upper?'upper':'ground'});
   }
-  function shop(m,b){
-    const r=rands(b.seed+Math.floor(m.x*35)),z=m.z+m.d/2,n=Math.max(1,Math.floor(m.w/7.5)),bay=m.w/n;
-    const names=['SOMA','KINETIC','ION REPAIR','RAMEN 09','FRAME','OXYGEN','HARDLINE','TESSERA'];
-    for(let i=0;i<n;i++){
-      const x=m.x-m.w/2+(i+.5)*bay;
-      B.box(x,2.1,z+.12,bay-.7,3.1,.18,'black',false,true);
-      B.box(x,2.15,z+.28,bay-1,2.7,.10,'glass',false,true);
-      for(let j=1;j<3;j++)B.box(x-bay/2+j*bay/3,2.1,z+.39,.08,3.1,.12,'steel',false,true);
-      const mat=b.district===4?(i%2?'rust':'sand'):'steel';
-      B.box(x,3.8,z+1,bay-.3,.21,2.8,mat,true);
-      B.box(x,3.64,z+2.3,bay-.9,.06,.07,'warm',false,true);
-      sign(names[Math.floor(r()*names.length)],x,4.55,z+.35,Math.min(bay-1,7),.9,0,b.district===4?'#d5b58b':'#b1bfbe');
-    }
-  }
+  function shop(m,b){sci.shops(m,b);}
   function podium(m,b){
     shell(m.x,m.z,m.w,m.d,FLOOR,m.top-FLOOR,m.mat,.65,1,0,m.top===LEVEL?'deck':'dark');
     // Coarse architectural division, not a cage of trim around every window.
@@ -153,54 +142,7 @@ export function compileUrbanism(api,city){
       for(let k=0;k<5;k++)B.box(xx+.22,m.top*.22+k*.38,zz,.18,.12,1.5,'black',false,true);
     }
   }
-  function tower(t,b,r){
-    const h=t.top-t.base;
-    if(t.kind===3){
-      let ww=t.w,dd=t.d,z=t.z,y=t.base;
-      const n=3;
-      for(let k=0;k<n;k++){
-        const hh=h/n;
-        shell(t.x,z,ww,dd,y,hh,'facIvory',1.2,1,0,'ceramic');
-        plant(t.x,z+dd/2-1.2,ww-3,1.5,y+hh);
-        y+=hh;ww-=Math.min(3,ww*.12);dd-=Math.min(3,dd*.13);z-=1.2;
-      }
-      roofkit(t.x,z,ww,dd,y,r);
-    }else if(t.mat==='facGlass'){
-      // Three distinct shapes, but always metrically aligned floors and base.
-      if(t.kind===1){
-        const hh=Math.floor(h*.65/4)*4;
-        shell(t.x,t.z,t.w,t.d,t.base,hh,'facGlass',2.8,1,0,'steel');
-        shell(t.x-t.w*.10,t.z-1,t.w*.77,t.d*.8,t.base+hh,h-hh,'facGlass',2,1,0,'steel');
-        roofkit(t.x-t.w*.1,t.z-1,t.w*.77,t.d*.8,t.top,r);
-      }else{
-        const taper=t.kind===2?.78:1;
-        shell(t.x,t.z,t.w,t.d,t.base,h,'facGlass',Math.min(3.5,t.w*.14),taper,0,'steel');
-        for(const sx of[-1,1])for(const sz of[-1,1])B.beam(V(t.x+sx*(t.w/2-1.2),t.base,t.z+sz*(t.d/2-.5)),V(t.x+sx*(t.w*taper/2-1),t.top,t.z+sz*(t.d*taper/2-.4)),.45,'ivory',true);
-        if(t.kind===2){
-          B.box(t.x,t.top+1.8,t.z,t.w*.7,3.6,t.d*.70,'steel',true);
-          B.box(t.x,t.top+10,t.z,.35,18,.35,'steel',false,true);
-          B.box(t.x,t.top+19,t.z,.3,.25,.3,'red',false,true);
-          sign('HELIX',t.x,t.top-8,t.z+t.d*.82/2+.4,Math.min(17,t.w*.7),3.2,0,'#e2c494','CIVIC SYSTEMS');
-        }else roofkit(t.x,t.z,t.w*taper,t.d*taper,t.top,r);
-      }
-    }else{
-      shell(t.x,t.z,t.w,t.d,t.base,h,t.mat,.65,1,0,'dark');
-      roofkit(t.x,t.z,t.w,t.d,t.top,r);
-      if(b.district===3)for(let y=t.base+4;y<t.top-2;y+=8){
-        const z=t.z+t.d/2+.85;
-        B.box(t.x,y,z,t.w-1.5,.28,1.8,'steel',true);
-        B.box(t.x,y+.7,z+.83,t.w-1.8,1.1,.15,'concrete',false,true);
-      }
-      if(b.district===2){
-        for(const s of[-1,1])for(let yy=t.base+3;yy<t.top-2;yy+=5.5){
-          B.box(t.x,yy,t.z+s*(t.d/2+.24),t.w-2,3.8,.4,'dark',false,true);
-          for(let k=0;k<6;k++)B.box(t.x,yy-1.3+k*.43,t.z+s*(t.d/2+.52),t.w-3,.1,.2,'steel',false,true);
-        }
-        for(const s of[-1,1])pipe([t.x+s*(t.w/2+.5),t.base,t.z],[t.x+s*(t.w/2+.5),t.top-2,t.z],.3,'steel');
-      }
-    }
-    records.roofs.push({building:t.id,y:t.top,x:t.x,z:t.z,w:t.w,d:t.d});
-  }
+  function tower(t,b,r){sci.tower(t,b,r);records.roofs.push({building:t.id,y:t.top,x:t.x,z:t.z,w:t.w,d:t.d});}
   function loadingDock(m,b){
     const z=m.z+m.d/2;
     const n=Math.floor(m.w/7.5),ww=m.w/n;
@@ -363,9 +305,9 @@ export function compileUrbanism(api,city){
   }
 
   for(const b of city.blocks){
-    const r=rands(b.seed);b.masses.forEach(m=>podium(m,b));b.towers.forEach(t=>tower(t,b,r));
+    const r=rands(b.seed);b.masses.forEach(m=>{podium(m,b);sci.podium(m,b);});b.towers.forEach(t=>tower(t,b,r));
     if(b.district===0)industry(b,r);
-    platform(b);roofAccess(b);switchback(b);court(b,r);
+    platform(b);roofAccess(b);switchback(b);court(b,r);sci.extras(b);
   }
   city.upperLinks.forEach(bridge);
 
@@ -379,6 +321,7 @@ export function compileUrbanism(api,city){
     if(r()>.48)shell(xx-12,z-5,25,27,h-.65,20+r()*42,'facDark',1.2,1,0,'dark',false);
     records.context.push({x:xx,z,h});
   }
+  records.scifi=sci.records;
   return records;
 }
 

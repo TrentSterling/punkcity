@@ -5,6 +5,7 @@
  * Metric, seeded recipes remain separate from rendering and movement equipment.
  */
 import * as THREE from 'three';
+import {installScifiMaterials} from './scifi.js';
 import {planUrbanism, compileUrbanism, auditUrbanism} from './urbanism.js';
 import {facadeMaterial, pavingMaterial} from './facades.js';
 export const DISTRICTS = [
@@ -36,7 +37,7 @@ export function planCity(seed,height=1){
     upperLinks.push({a:a.id,b:b.id,axis,y:16,width:a.district===4||b.district===4?7:5.2});a.links.push(side);b.links.push(opp);
   }
   const districts=DISTRICTS.map((d,n)=>{const bs=blocks.filter(b=>b.district===n);return{...d,blocks:bs.map(b=>b.id),x:bs.reduce((t,b)=>t+b.x,0)/bs.length,z:bs.reduce((t,b)=>t+b.z,0)/bs.length};});
-  return planUrbanism({version:'0.3.0',seed,unit:'metre',heightMultiplier:height,groundStreets:{x:xs,z:zs,widthsX,widthsZ},blocks,upperLinks,districts,bounds:[xs[0]-12,-1,zs[0]-12,xs[6]+12,180,zs[6]+12],baseline:'All structural surfaces climbable. Equipment does not change layout.'});
+  return planUrbanism({version:'0.4.0',seed,unit:'metre',heightMultiplier:height,groundStreets:{x:xs,z:zs,widthsX,widthsZ},blocks,upperLinks,districts,bounds:[xs[0]-12,-1,zs[0]-12,xs[6]+12,180,zs[6]+12],baseline:'All structural surfaces climbable. Equipment does not change layout.'});
 }
 export function addDistrictMaterials(mats,surface){
   mats.deck=pavingMaterial();
@@ -44,6 +45,7 @@ export function addDistrictMaterials(mats,surface){
   for(const [k,c]of Object.entries(colors))mats[k]=surface(c,k==='water'?.22:.8,k==='water'?.5:.12,.035);
   for(const [name,col,type]of [['facIvory',0xb8b6a7,0],['facSand',0xa18a6c,0],['facRust',0x9b6750,0],['facBlue',0x516c76,0],['facGlass',0x59717b,1],['facDark',0x263c47,2],['facMarket',0xa88570,3]])mats[name]=facadeMaterial(col,type);
   mats.paint=new THREE.MeshStandardMaterial({color:0xd2c7ad,roughness:.95,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+  installScifiMaterials(mats,surface);
 }
 export function compileDistricts(api,data){
   const {B,mats,sign,rail,pipe,indexCollider}=api;
@@ -58,25 +60,13 @@ export function compileDistricts(api,data){
     const tri=(a,b,c,ua,ub,uc)=>{positions.push(...a,...b,...c);uvs.push(...ua,...ub,...uc);};
     for(let i=0;i<p.length;i++){
       const j=(i+1)%p.length,[ax,az]=p[i],[bx,bz]=p[j],[atx,atz]=top[i],[btx,btz]=top[j];
-      const len=Math.hypot(bx-ax,bz-az),bay=len<2.4?0:Math.max(1,Math.round(len/(mat==='facGlass'?2.8:3.2))),floors=Math.max(1,Math.round(h/3.3));
+      const len=Math.hypot(bx-ax,bz-az),bay=len<2.4?0:Math.max(1,Math.round(len/(mat==='facGlass'?5.8:5.4))),floors=Math.max(1,Math.round(h/7));
       const a=[x+ax,base,z+az],b=[x+bx,base,z+bz],c=[x+btx,base+h,z+btz],d0=[x+atx,base+h,z+atz];
       tri(a,c,b,[0,0],[bay,floors],[bay,0]);tri(a,d0,c,[0,0],[0,floors],[bay,floors]);
     }
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.computeVertexNormals();g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(Math.round(((x*31+z*13+h*7)%991+991)%991)),1));addGeo(g,mat);
     const cap=new THREE.Shape();top.forEach(([a,b],i)=>i?cap.lineTo(a,b):cap.moveTo(a,b));cap.closePath();const cg=new THREE.ShapeGeometry(cap);cg.rotateX(-pi/2);cg.translate(x,base+h,z);addGeo(cg,roof);
     if(solid)indexCollider(new THREE.Box3(V(x-w/2,base,z-d/2),V(x+w/2,base+h,z+d/2)));
-    // Physical sill profiles and mullions outside the single owned facade.
-    if(solid && mat.startsWith('fac') && h>8){
-      const nr=Math.max(1,Math.round(h/3.3)),story=h/nr;
-      for(let i=0;i<p.length;i++){
-        const j=(i+1)%p.length,[ax,az]=p[i],[bx,bz]=p[j],len=Math.hypot(bx-ax,bz-az);if(len<4)continue;
-        const nx=(bz-az)/len,nz=-(bx-ax)/len;
-        const at=(u,y0,off=.18)=>{const t=(y0-base)/h,scale=1+(topScale-1)*t;return V(x+(ax+(bx-ax)*u)*scale+shift*t+nx*off,y0,z+(az+(bz-az)*u)*scale+nz*off);};
-        for(let row=1;row<nr;row+=mat==='facGlass'?1:2){const yy=base+row*story;B.beam(at(.025,yy),at(.975,yy),mat==='facGlass'?.065:.16,mat==='facGlass'?'steel':'concrete',true);}
-        const bays=Math.max(1,Math.round(len/(mat==='facGlass'?2.6:3.1)));
-        for(let k=1;k<bays;k+=mat==='facGlass'?3:3)B.beam(at(k/bays,base+.3,.10),at(k/bays,base+h-.3,.10),mat==='facGlass'?.075:.12,'steel',true);
-      }
-    }
     B.structures++;buildings.push({x,z,w,d,base,h,mat,topScale});return base+h;
   }
   function tank(x,z,r,h,base=.35){

@@ -1,0 +1,98 @@
+{
+  "source_repository": "TrentSterling/punk",
+  "source_commit": "6420c88506862f1c0e13622e48ec044616de5819",
+  "destination_repository": "TrentSterling/punkcity",
+  "site": "https://tront.xyz/punkcity/",
+  "generator_blob_sha": {
+    "citylab.js": "9b8d2b7676bc2a3668354e05bd9c5263e0642be3",
+    "districts.js": "62a15ea0070d1859e1e3a607184c313abd3712be"
+  },
+  "files": [
+    {
+      "source": "citylab/HACKERPUNK-Citylab-v0.1.html",
+      "destination": "archive/legacy-tools/HACKERPUNK-Citylab-v0.1.html",
+      "source_blob_sha": "bc462dad6a8c227f4c15db47ab05fc35cba9580f"
+    },
+    {
+      "source": "citylab/HACKERPUNK-Citylab-v0.2.html",
+      "destination": "HACKERPUNK-Citylab-v0.2.html",
+      "source_blob_sha": "5fb41e43c6067753dc9124217fbe71b4aace85d3"
+    },
+    {
+      "source": "citylab/README.md",
+      "destination": "README.md",
+      "source_blob_sha": "1c4d0bf5ad14557e42de79e3e7e251fdf8c41ab5"
+    },
+    {
+      "source": "citylab/REFERENCE-STUDY.md",
+      "destination": "REFERENCE-STUDY.md",
+      "source_blob_sha": "dc8c707fa72e20d477f67f0f01118bdd077ad96a"
+    },
+    {
+      "source": "citylab/build_standalone.py",
+      "destination": "build_standalone.py",
+      "source_blob_sha": "6c371b0ddd4d1e573880be87d756793b2bb324a7"
+    },
+    {
+      "source": "citylab/check_locomotion.mjs",
+      "destination": "check_locomotion.mjs",
+      "source_blob_sha": "787e259009f3ccdac4cf1a3c41bc00b595d32211"
+    },
+    {
+      "source": "citylab/citylab.js",
+      "destination": "citylab.js",
+      "source_blob_sha": "9b8d2b7676bc2a3668354e05bd9c5263e0642be3"
+    },
+    {
+      "source": "citylab/districts.js",
+      "destination": "districts.js",
+      "source_blob_sha": "62a15ea0070d1859e1e3a607184c313abd3712be"
+    },
+    {
+      "source": "citylab/finish-v02.py",
+      "destination": "archive/legacy-tools/finish-v02.py",
+      "source_blob_sha": "18181638b2ea9ff192669330eb4c59c2a19b68e0"
+    },
+    {
+      "source": "citylab/index.html",
+      "destination": "index.html",
+      "source_blob_sha": "1800b10f539d4fafc88864f8e738b25f2426d81e"
+    },
+    {
+      "source": "citylab/offline-qa.cjs",
+      "destination": "archive/legacy-tools/offline-qa.cjs",
+      "source_blob_sha": "2b4f16b151f3ae1d85ca4c21b43358d5939ad4bc"
+    },
+    {
+      "source": "citylab/qa-v02.cjs",
+      "destination": "qa-v02.cjs",
+      "source_blob_sha": "b88544f8ba416ba9d4185c9ee36748528cedb2a4"
+    },
+    {
+      "source": "citylab/qa.cjs",
+      "destination": "archive/legacy-tools/qa.cjs",
+      "source_blob_sha": "8f50a38033933257056a65ba0e0b67ecff64b954"
+    },
+    {
+      "source": "citylab/refine-v01.py",
+      "destination": "archive/legacy-tools/refine-v01.py",
+      "source_blob_sha": "591a611c4cba9d3bec0cccb70245f2df70a705ff"
+    },
+    {
+      "source": "citylab/refine-v02.py",
+      "destination": "archive/legacy-tools/refine-v02.py",
+      "source_blob_sha": "5fe7506239d3974419f081717eef367642e0e1bb"
+    },
+    {
+      "source": "citylab/test-districts.mjs",
+      "destination": "test-districts.mjs",
+      "source_blob_sha": "47beaf96bc94f701cae405ae2f110cd1b3263f64"
+    },
+    {
+      "source": "citylab/upgrade-v02.py",
+      "destination": "archive/legacy-tools/upgrade-v02.py",
+      "source_blob_sha": "291d0d5bfca55708c2f2583608f6332630bc0a59"
+    }
+  ],
+  "notes": "Core city and movement sources copied byte-for-byte. Hosting, test paths, README and vendoring changed only."
+}

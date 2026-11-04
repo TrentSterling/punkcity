@@ -1,0 +1,5 @@
+node_modules/
+_source/
+qa-v02/
+__pycache__/
+*.pyc

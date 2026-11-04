@@ -2,7 +2,7 @@ name: Punkcity urban logic review
 on:
   push:
     branches: ['iteration/urban-logic-v03']
-    paths: ['tools/integrate-v03.py']
+    paths: ['tools/refine-v03.py']
 permissions:
   contents: write
 jobs:
@@ -14,8 +14,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Integrate source-checked revision
-        run: python3 tools/integrate-v03.py
+      - name: Apply rendered review corrections
+        run: python3 tools/refine-v03.py
       - name: Geometry and starter locomotion tests
         run: |
           node --check citylab.js
@@ -35,12 +35,12 @@ jobs:
         run: |
           python3 -m http.server 8080 --directory .. >/tmp/punkcity-http.log 2>&1 &
           NODE_PATH=/tmp/punkcity-qa/node_modules node qa-v03.cjs
-      - name: Save verified integration to review branch
+      - name: Save reviewed source
         run: |
           git config user.name 'Trent'
           git config user.email 'trentsterling@gmail.com'
-          git add citylab.js districts.js index.html build_standalone.py HACKERPUNK-Citylab-v0.3.html
-          git commit -m 'Integrate connected upper streets, urban frontages and stable glazing'
+          git add citylab.js districts.js facades.js urbanism.js HACKERPUNK-Citylab-v0.3.html
+          git commit -m 'Fix facade interpolation noise and align terrace access and wayfinding'
           git push origin HEAD:iteration/urban-logic-v03
       - uses: actions/upload-artifact@v4
         if: always()

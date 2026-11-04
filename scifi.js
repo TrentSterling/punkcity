@@ -116,6 +116,8 @@ export function createScifiKit(api,city){
  function crown(t,b,x,z,w,d,base,top){
   const p=PALETTES[b.district],h=top-base,kind=b.assembly%3;
   if(kind===0){
+   // A continuous core supports the spaced radiator layers.
+   shell(x,z,w*.44,d*.44,base,h,'steel',.35,1,0,p.edge);
    for(let i=0;i<3;i++){const ww=w*(.90-i*.075),dd=d*(.90-i*.075),y=base+i*h*.25;shell(x,z,ww,dd,y,h*.21,p.armor,Math.min(1.1,ww*.15),1,0,p.edge);}
    shell(x,z,w*.51,d*.52,base+h*.75,h*.25,'steel',.65,1,0,p.armor);
   }else if(kind===1){
@@ -249,9 +251,17 @@ export function createScifiKit(api,city){
   }
   if(b.district===3||b.district===4){
    // Sagging service cables stay above 20 m, clear of the 16 m pedestrian level.
-   const z=b.z-2,height=Math.max(23,Math.min(30,north[0].top+9));
+   const z=b.z-4.7,height=Math.max(23,Math.min(30,north[0].top+9));
+   // Masts sit outside the seven-metre public street; both wires meet crossarms.
+   for(const side of[-1,1]){
+    const x=b.x+side*b.w*.44;
+    B.box(x,(height+.28)/2,z,.22,height-.28,.22,'steel',true);
+    casing(x,.9,z,.75,1.2,.75,p.armor,0,.16);
+    B.box(x,height,z+.4,.25,.22,1.5,'steel',false,true);
+    for(let row=0;row<2;row++)B.instance('cyl',x,height+.10,z+row*.8,.15,.20,.15,'armorBone',true);
+   }
    for(let row=0;row<2;row++){
-    const curve=new THREE.QuadraticBezierCurve3(V(b.x-b.w*.44,height,z+row*.9),V(b.x,height-3,z+row*.9),V(b.x+b.w*.44,height,z+row*.9));
+    const curve=new THREE.QuadraticBezierCurve3(V(b.x-b.w*.44,height,z+row*.8),V(b.x,height-3,z+row*.8),V(b.x+b.w*.44,height,z+row*.8));
     const pts=curve.getPoints(12);for(let i=0;i<12;i++)B.beam(pts[i],pts[i+1],.07,'carbon',true);records.cableRuns++;
    }
    for(const m of b.masses.filter(m=>m.role.startsWith('south'))){

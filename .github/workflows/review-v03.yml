@@ -1,0 +1,57 @@
+name: Punkcity urban logic review
+on:
+  push:
+    branches: ['iteration/urban-logic-v03']
+    paths: ['tools/integrate-v03.py']
+permissions:
+  contents: write
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Integrate source-checked revision
+        run: python3 tools/integrate-v03.py
+      - name: Geometry and starter locomotion tests
+        run: |
+          node --check citylab.js
+          node --check districts.js
+          node --check urbanism.js
+          node --check facades.js
+          node test-urbanism.mjs
+          python3 build_standalone.py
+      - name: Install browser verifier
+        run: |
+          mkdir -p /tmp/punkcity-qa
+          cd /tmp/punkcity-qa
+          npm init -y
+          npm install --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Render and test all six districts
+        run: |
+          python3 -m http.server 8080 --directory .. >/tmp/punkcity-http.log 2>&1 &
+          NODE_PATH=/tmp/punkcity-qa/node_modules node qa-v03.cjs
+      - name: Save verified integration to review branch
+        run: |
+          git config user.name 'Trent'
+          git config user.email 'trentsterling@gmail.com'
+          git add citylab.js districts.js index.html build_standalone.py HACKERPUNK-Citylab-v0.3.html
+          git commit -m 'Integrate connected upper streets, urban frontages and stable glazing'
+          git push origin HEAD:iteration/urban-logic-v03
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: punkcity-v03-review
+          path: |
+            qa-v03/
+            HACKERPUNK-Citylab-v0.3.html
+            citylab.js
+            districts.js
+            urbanism.js
+            facades.js
+            test-urbanism.mjs
+          retention-days: 14

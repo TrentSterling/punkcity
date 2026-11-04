@@ -26,6 +26,7 @@ const timer=setTimeout(()=>{console.error('Bounded QA timeout');process.exit(2);
   await page.keyboard.press('KeyB');await page.keyboard.press('Digit3');report.equipment=await page.evaluate(()=>citylab.player.gear);
   await page.evaluate(()=>{citylab.regenerate('HACKERPUNK-02');citylab.lighting(0);citylab.setView(2);});const pos=await page.evaluate(()=>citylab.camera.position.toArray());
   for(let i=0;i<3;i++){await page.evaluate(({p,i})=>{citylab.camera.position.set(p[0]+i*.12,p[1],p[2]);window.__frame(performance.now());},{p:pos,i});await page.screenshot({path:out+'/motion-'+i+'.png',timeout:45000});}
+  await page.evaluate(()=>{citylab.setHUD(false);citylab.setCamera([318,255,370],[0,25,0]);window.__frame(performance.now());});await page.screenshot({path:out+'/overview-matched.png',timeout:45000});
   const context=await browser.newContext({offline:true,viewport:{width:960,height:600}}),offline=await context.newPage(),offErrors=[];
   offline.on('pageerror',e=>offErrors.push(String(e)));await offline.addInitScript(pause);await offline.goto('file://'+path.resolve('HACKERPUNK-Citylab-v0.4.html'),{waitUntil:'load',timeout:60000});await offline.waitForFunction(()=>window.citylab?.ready,null,{timeout:45000});await offline.evaluate(()=>window.__frame(performance.now()));
   report.offline={errors:offErrors,version:await offline.evaluate(()=>citylab.version)};

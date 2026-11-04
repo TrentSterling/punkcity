@@ -166,6 +166,7 @@ export function createScifiKit(api,city){
      casing(sx,y+hh*.5,zz+dd/2+.4,1.0,hh-.4,.85,p.edge,0,.22);
      casing(sx,y+hh*.5,zz-dd/2-.4,1.0,hh-.4,.85,p.edge,Math.PI,.22);
      strip(sx,y+hh*.5,zz+dd/2+.87,.15,hh*.76,.07,p.glow);
+     B.beam(V(sx,y+.5,zz+dd/2+1.1),V(sx-side*.6,y+Math.min(8,hh*.3),zz+dd/2+.45),.65,p.armor,true);
     }
     y+=hh;xx-=ww*.085;zz-=dd*.03;ww*=.77;dd*=.80;
    }
@@ -258,11 +259,34 @@ export function createScifiKit(api,city){
     for(let k=0;k<2;k++){casing(x-k*1.3,.75,z,1.10,.95,1.05,k?'armorBone':p.armor,0,.14);strip(x-k*1.3,.77,z+.54,.65,.09,.05,'carbon');}
    }
   }
+
+  // Street service and roof-spine refinement.
+  for(const m of b.masses.filter(m=>m.role.startsWith('south'))){
+   const spineW=Math.min(9,m.w*.58),spineD=Math.min(4,m.d*.40),rx=m.x,rz=m.z-1;
+   servicePod(rx,m.top+.04,rz,spineW,2.15,spineD,p.armor);
+   for(const side of[-1,1]){
+    B.instance('cyl',rx+side*spineW*.27,m.top+2.5,rz,Math.min(.75,spineD*.25),.60,Math.min(.75,spineD*.25),'armorBone',true);
+    B.instance('cyl',rx+side*spineW*.27,m.top+2.83,rz,Math.min(.57,spineD*.19),.08,Math.min(.57,spineD*.19),'carbon',true);
+   }
+   pipe([rx-spineW*.35,m.top+.8,rz+spineD/2+.5],[m.x-m.w/2+1.1,m.top+.8,rz+spineD/2+.5],.22,'armorSilver');
+   if(b.district!==0&&b.district!==2){
+    const front=m.z+m.d/2,xx=m.x+m.w*.23;
+    casing(xx,.95,front+1.1,2.3,1.1,1.05,p.armor,0,.2);
+    B.box(xx,1.55,front+1.1,2.4,.15,1.12,'steel',false,true);
+    screen(xx,1.08,front+1.68,1.35,.56,0,(b.district+b.j+2)%8);
+    for(let i=0;i<3;i++)B.instance('cyl',xx-.65+i*.65,1.82,front+1.13,.18,.40,.18,i%2?'armorBone':p.armor,true);
+    const postX=m.x-m.w*.32,postZ=front+2.1;
+    B.instance('cyl',postX,1.05,postZ,.23,1.55,.23,'steel',true);
+    B.instance('cyl',postX,1.74,postZ,.25,.12,.25,p.glow,true);
+    records.kiosks++;
+   }
+  }
   for(const rect of b.walkSurfaces){
    if(rect.kind!=='arm')continue;const horiz=rect.w>rect.d,len=horiz?rect.w:rect.d,n=Math.max(1,Math.floor(len/5));
    for(const side of[-1,1])for(let i=0;i<n;i++){
     const u=-len/2+(i+.5)*len/n,x=rect.x+(horiz?u:side*(rect.w/2+.07)),z=rect.z+(horiz?side*(rect.d/2+.07):u),rot=horiz?(side>0?0:Math.PI):side*Math.PI/2;
     casing(x,15.10,z,len/n-.28,.72,.26,p.armor,rot,.18);
+    if(!(rect.id.endsWith('/N')&&Math.abs(z-(b.z-10))<4.1)){casing(x,16.40,z,len/n-.48,.54,.16,'steel',rot,.12);strip(x,16.48,z,.12,.12,.12,p.glow);}
     strip(x,15.15,z,.1,.1,.1,p.glow);
    }
   }

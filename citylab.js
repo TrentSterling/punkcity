@@ -56,14 +56,14 @@ function lighting(index){config.lighting=(index+3)%3;const t=config.lighting;set
 // This is a desktop collision/locomotion preview, not a claim of VR hand physics.
 const player={mode:'fly',feet:v3(),velocity:v3(),gear:0,grounded:false,fuel:4,boots:false,grapple:null,climbing:false};let yaw=0,pitch=0,lastClimb=null,keys=new Set(),mouseDown=false,viewIndex=0;
 const views=[
-{name:'Civic avenue',p:[-6,5.3,30],look:[-27,22,-25]},
-{name:'District overview',p:[318,255,370],look:[0,25,0]},
+{name:'Civic avenue',p:[-6,8,63],look:[29,21,-33]},
+{name:'District overview',p:[210,170,255],look:[0,20,0]},
 {name:'Upper market street',p:[-13,18.1,110],look:[-60,20,110]},
 {name:'Foundry loading court',p:[-172,5,-145],look:[-207,10,-184]},
 {name:'Corporate Crown',p:[12,32,8],look:[42,59,-41]},
 {name:'Relay service street',p:[163,4,-78],look:[121,24,-114]},
 {name:'The Stacks',p:[-172,4,103],look:[-217,20,107]},
-{name:'Market court',p:[-46,3,142],look:[-46,13,108]},
+{name:'Market frontage',p:[-66,9,164],look:[-38,11,128]},
 {name:'Garden terraces',p:[173,42,149],look:[125,23,111]}
 ];
 

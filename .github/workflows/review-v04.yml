@@ -2,12 +2,9 @@ name: Punkcity sci-fi architecture review
 on:
   push:
     branches: [iteration/scifi-architecture-v04]
-    paths: ['scifi.js', 'tools/integrate-scifi-v04.py', 'tools/refine-scifi-v04.py', '.github/workflows/review-v04.yml']
+    paths: ['tools/anchor-scifi-v04.py']
 permissions:
   contents: write
-concurrency:
-  group: punkcity-scifi-review
-  cancel-in-progress: true
 jobs:
   review:
     runs-on: ubuntu-24.04
@@ -17,14 +14,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Integrate source-checked architecture
-        run: |
-          python3 -c "from pathlib import Path; import subprocess; s=Path('citylab.js').read_text(); subprocess.run(['python3','tools/integrate-scifi-v04.py'],check=True) if \"VERSION='0.3.0'\" in s else None"
-          if [ -f tools/refine-scifi-v04.py ]; then python3 tools/refine-scifi-v04.py; fi
-      - name: Verify geometry and starter stair traversal
+      - name: Anchor the reviewed mechanical details
+        run: python3 tools/anchor-scifi-v04.py
+      - name: Verify geometry and starter traversal
         run: |
           node --check scifi.js
-          node --check citylab.js
           node test-scifi.mjs
           python3 build_standalone.py
       - name: Install browser verifier
@@ -40,12 +34,12 @@ jobs:
           ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
           python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
           NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v04.cjs
-      - name: Save verified integration
+      - name: Save verified details
         run: |
           git config user.name 'Trent'
           git config user.email 'trentsterling@gmail.com'
-          git add citylab.js districts.js urbanism.js scifi.js index.html build_standalone.py qa-v04.cjs test-scifi.mjs HACKERPUNK-Citylab-v0.4.html
-          git diff --cached --quiet || git commit -m 'Integrate armored sci-fi city architecture and verified offline build'
+          git add scifi.js HACKERPUNK-Citylab-v0.4.html
+          git commit -m 'Support mechanical crowns and anchor service cables clear of upper routes'
           git push origin HEAD:iteration/scifi-architecture-v04
       - uses: actions/upload-artifact@v4
         if: always()
@@ -59,5 +53,4 @@ jobs:
             *.cjs
             index.html
             build_standalone.py
-            tools/integrate-scifi-v04.py
           retention-days: 30

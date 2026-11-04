@@ -16,7 +16,8 @@ float rectAA(vec2 p,vec2 size,vec2 aa){vec2 a=smoothstep(size-aa,size+aa,abs(p))
     const glass=type===1,half=glass?'.478,.405':type===2?'.29,.28':'.35,.335';
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
 vec2 cell=fract(fUV),idx=floor(fUV),aa=max(fwidth(fUV),vec2(.0003));
-float identity=fh(idx+vec2(fSeed,fSeed*.31));
+float buildingId=floor(fSeed+.5);
+float identity=fh(idx+vec2(buildingId,buildingId*.31));
 vec2 aperture=vec2(${half});
 float opening=rectAA(cell-.5,aperture,aa);
 float surround=rectAA(cell-.5,aperture+vec2(.028,.026),aa);
@@ -24,7 +25,7 @@ float sill=rectAA(cell-vec2(.5,.13),vec2(.39,.026),aa);
 vec3 wall=diffuseColor.rgb;
 float joints=rectAA(cell-.5,vec2(.496,.49),aa);
 wall*=mix(.73,1.,joints);
-wall*=.94+.10*fh(vec2(fSeed,13.));
+wall*=.94+.10*fh(vec2(buildingId,13.));
 wall*=mix(.72,1.,smoothstep(0.,8.,fP.y));
 vec3 N=normalize(fN),T=normalize(cross(vec3(0,1,0),N)),eye=normalize(cameraPosition-fP);
 vec3 ro=vec3((cell-.5)/aperture,1.);
@@ -59,4 +60,24 @@ diffuseColor.rgb=mix(diffuseColor.rgb,mix(wall,vec3(.13,.19,.21),${glass?'.83':'
   };
   material.customProgramCacheKey=()=>`punkcity-v03-facade-${type}`;
   return material;
+}
+
+export function pavingMaterial(){
+ const m=new THREE.MeshStandardMaterial({color:0x8d9693,roughness:.94,metalness:.03});
+ m.onBeforeCompile=s=>{
+  s.vertexShader='varying vec3 paveWorld;varying vec3 paveNormal;\n'+s.vertexShader;
+  s.vertexShader=s.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+paveWorld=position;paveNormal=normal;
+#ifdef USE_INSTANCING
+paveWorld=(instanceMatrix*vec4(position,1.)).xyz;paveNormal=normalize(mat3(instanceMatrix)*normal);
+#endif
+paveWorld=(modelMatrix*vec4(paveWorld,1.)).xyz;paveNormal=normalize(mat3(modelMatrix)*paveNormal);`);
+  s.fragmentShader='varying vec3 paveWorld;varying vec3 paveNormal;\n'+s.fragmentShader;
+  s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+vec2 p=paveWorld.xz/3.2;vec2 fw=max(fwidth(p),vec2(.0003));vec2 f=abs(fract(p)-.5);
+float joint=max(smoothstep(.493-fw.x,.493+fw.x,f.x),smoothstep(.493-fw.y,.493+fw.y,f.y));
+float horizontal=smoothstep(.7,.95,abs(paveNormal.y));
+diffuseColor.rgb*=1.-.36*joint*horizontal;
+`);
+ };m.customProgramCacheKey=()=> 'punkcity-metric-paving-v03';return m;
 }

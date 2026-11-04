@@ -6,7 +6,7 @@
  */
 import * as THREE from 'three';
 import {planUrbanism, compileUrbanism, auditUrbanism} from './urbanism.js';
-import {facadeMaterial} from './facades.js';
+import {facadeMaterial, pavingMaterial} from './facades.js';
 export const DISTRICTS = [
   {id:'foundry',name:'THE FOUNDRY',short:'FOUNDRY',color:'#d18a5b',description:'Furnaces, sawtooth halls and cargo gantries'},
   {id:'crown',name:'CORPORATE CROWN',short:'CROWN',color:'#cfccb7',description:'Tapered glass towers and civic megastructures'},
@@ -39,6 +39,7 @@ export function planCity(seed,height=1){
   return planUrbanism({version:'0.3.0',seed,unit:'metre',heightMultiplier:height,groundStreets:{x:xs,z:zs,widthsX,widthsZ},blocks,upperLinks,districts,bounds:[xs[0]-12,-1,zs[0]-12,xs[6]+12,180,zs[6]+12],baseline:'All structural surfaces climbable. Equipment does not change layout.'});
 }
 export function addDistrictMaterials(mats,surface){
+  mats.deck=pavingMaterial();
   const colors={ivory:0xcac6b2,ceramic:0xd1d4c9,ochre:0xb68758,oxide:0x8e5140,carbon:0x1b2b32,green:0x345f50,water:0x1e5765};
   for(const [k,c]of Object.entries(colors))mats[k]=surface(c,k==='water'?.22:.8,k==='water'?.5:.12,.035);
   for(const [name,col,type]of [['facIvory',0xb8b6a7,0],['facSand',0xa18a6c,0],['facRust',0x9b6750,0],['facBlue',0x516c76,0],['facGlass',0x59717b,1],['facDark',0x263c47,2],['facMarket',0xa88570,3]])mats[name]=facadeMaterial(col,type);
@@ -61,7 +62,7 @@ export function compileDistricts(api,data){
       const a=[x+ax,base,z+az],b=[x+bx,base,z+bz],c=[x+btx,base+h,z+btz],d0=[x+atx,base+h,z+atz];
       tri(a,c,b,[0,0],[bay,floors],[bay,0]);tri(a,d0,c,[0,0],[0,floors],[bay,floors]);
     }
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.computeVertexNormals();g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(((x*31+z*13+h*7)%991+991)%991),1));addGeo(g,mat);
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.computeVertexNormals();g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(Math.round(((x*31+z*13+h*7)%991+991)%991)),1));addGeo(g,mat);
     const cap=new THREE.Shape();top.forEach(([a,b],i)=>i?cap.lineTo(a,b):cap.moveTo(a,b));cap.closePath();const cg=new THREE.ShapeGeometry(cap);cg.rotateX(-pi/2);cg.translate(x,base+h,z);addGeo(cg,roof);
     if(solid)indexCollider(new THREE.Box3(V(x-w/2,base,z-d/2),V(x+w/2,base+h,z+d/2)));
     // Physical sill profiles and mullions outside the single owned facade.

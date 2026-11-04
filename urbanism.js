@@ -91,11 +91,11 @@ export function compileUrbanism(api,city){
   const edge=(x1,z1,x2,z2,y)=>{if(Math.hypot(x2-x1,z2-z1)>.15)rail(x1,z1,x2,z2,y);};
   const isNarrow=mat=>mat==='facGlass'?'steel':'concrete';
 
-  function parapet(m,y,open=''){
+  function parapet(m,y,open='',socket=null){
     const {x,z,w,d}=m;
     for(const side of['N','S','E','W']){
       const horiz=side==='N'||side==='S',s=side==='N'||side==='W'?-1:1,len=horiz?w:d,cx=x+(horiz?0:s*w/2),cz=z+(horiz?s*d/2:0);
-      if(open===side){const u=4.2;if(horiz){edge(cx-len/2+.3,cz,cx-u,cz,y);edge(cx+u,cz,cx+len/2-.3,cz,y);}else{edge(cx,cz-len/2+.3,cx,cz-u,y);edge(cx,cz+u,cx,cz+len/2-.3,y);}}
+      if(open===side){const u=3.5,off=socket?(horiz?socket.x-x:socket.z-z):0;if(horiz){edge(cx-len/2+.3,cz,cx+off-u,cz,y);edge(cx+off+u,cz,cx+len/2-.3,cz,y);}else{edge(cx,cz-len/2+.3,cx,cz+off-u,y);edge(cx,cz+off+u,cx,cz+len/2-.3,y);}}
       else edge(cx-(horiz?len/2-.3:0),cz-(horiz?0:len/2-.3),cx+(horiz?len/2-.3:0),cz+(horiz?0:len/2-.3),y);
     }
   }
@@ -126,7 +126,7 @@ export function compileUrbanism(api,city){
     }
   }
   function podium(m,b){
-    shell(m.x,m.z,m.w,m.d,FLOOR,m.top-FLOOR,m.mat,.65,1,0,'dark');
+    shell(m.x,m.z,m.w,m.d,FLOOR,m.top-FLOOR,m.mat,.65,1,0,m.top===LEVEL?'deck':'dark');
     // Coarse architectural division, not a cage of trim around every window.
     const sz=m.z+m.d/2;
     if(b.district!==0)for(const s of[-1,1]){
@@ -137,7 +137,7 @@ export function compileUrbanism(api,city){
     if(m.role.startsWith('north')){
       entrance(m,FLOOR,false,['WORKS ENTRY','CIVIC LOBBY','SERVICE ENTRY','RESIDENT ACCESS','MARKET HALL','GARDEN COURT'][b.district]);
       if(b.deck&&m.top===LEVEL){
-        parapet(m,m.top,'S');
+        parapet(m,m.top,b.links.includes('N')?(m.x<b.x?'E':'W'):'S',{x:b.x,z:b.z-10});
         // Upper level has a real terrace landing, not a disconnected facade portal.
         const host=city.blocks.find(bb=>bb.id===b.id);
         if(!b.links.includes('N')){
@@ -252,11 +252,13 @@ export function compileUrbanism(api,city){
       // Northern through routes stay open; two short arms meet terrace edges.
       for(const s of[-1,1]){
         const xx=b.x+s*4.75,zz=b.z-10;
-        slab(xx,zz,2.5,PATH,LEVEL,.7,'dark','terrace');
+        slab(xx,zz,2.5,PATH,LEVEL,.7,'deck','terrace');
       }
-      const m=b.masses[0];entrance({id:m.id+'/upper',x:m.x,z:m.z,w:m.w,d:m.d},LEVEL,true,'PUBLIC TERRACE');
+      const m=b.masses[0],ww=Math.min(9,m.w-3),zz=b.z-8.7;
+      shell(m.x,zz,ww,3,LEVEL,4.5,'facDark',.35,1,0,'steel');
+      entrance({id:m.id+'/upper',x:m.x,z:zz,w:ww,d:3},LEVEL,true,'PUBLIC TERRACE');
     }else{
-      const farZ=b.z-8,ww=Math.min(10,host.w*.4),dd=4;
+      const farZ=b.z-8.7,ww=Math.min(10,host.w*.4),dd=3;
       shell(b.x,farZ,ww,dd,LEVEL,4.5,'facDark',.35,1,0,'steel');
       entrance({id:host.id+'/pavilion',x:b.x,z:farZ,w:ww,d:dd},LEVEL,true,['WORKS','CIVIC','RELAY','RESIDENTS','MARKET','GARDEN'][b.district]);
     }
@@ -273,7 +275,7 @@ export function compileUrbanism(api,city){
   }
   function platform(b){
     for(const p of b.walkSurfaces){
-      slab(p.x,p.z,p.w,p.d,LEVEL,1,'concrete',p.kind);
+      slab(p.x,p.z,p.w,p.d,LEVEL,1,'deck',p.kind);
       if(p.kind==='arm'){
         supports(p);const horiz=p.w>p.d,len=horiz?p.w:p.d,half=(horiz?p.d:p.w)/2;
         for(const s of[-1,1]){
@@ -297,6 +299,10 @@ export function compileUrbanism(api,city){
     }
     if(!b.links.includes('E')){plant(b.x+4.4,b.z,1.4,5,LEVEL);}
     if(!b.links.includes('W')){B.box(b.x-4.2,LEVEL+.48,b.z,1.2,.6,3.6,'sand',false,true);}
+    const sx=b.x+4.8,sz=b.z+4.6;
+    B.box(sx,LEVEL+1.15,sz,.36,2.3,.36,'steel',false,true);
+    sign(['WORKS','CIVIC','RELAY','STACKS','MARKET','GARDEN'][b.district],sx,LEVEL+2.65,sz+.24,2.5,.85,0,'#c6b487');
+    B.box(sx,LEVEL+1.8,sz+.24,.18,.1,.08,'amber',false,true);
   }
   function switchback(b){
     if(!b.accessStair)return;
@@ -325,7 +331,7 @@ export function compileUrbanism(api,city){
     const a=city.blocks.find(b=>b.id===l.a),b=city.blocks.find(b=>b.id===l.b),horizontal=l.axis==='x';
     const lo=horizontal?a.x+a.w/2:a.z+a.d/2,hi=horizontal?b.x-b.w/2:b.z-b.d/2;
     const rect={id:l.a+'>'+l.b,x:horizontal?(lo+hi)/2:a.x,z:horizontal?a.z:(lo+hi)/2,w:horizontal?hi-lo:PATH,d:horizontal?PATH:hi-lo,y:LEVEL,kind:'bridge'};
-    slab(rect.x,rect.z,rect.w,rect.d,LEVEL,1,'steel','bridge');
+    slab(rect.x,rect.z,rect.w,rect.d,LEVEL,1,'deck','bridge');
     const len=hi-lo;
     for(const s of[-1,1]){
       const x=rect.x+(horizontal?0:s*(PATH/2-.15)),z=rect.z+(horizontal?s*(PATH/2-.15):0);

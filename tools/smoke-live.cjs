@@ -3,7 +3,11 @@ const fs = require('node:fs');
 const crypto = require('node:crypto');
 (async () => {
  const base = process.env.LIVE_BASE || 'https://tront.xyz/punkcity/';
- const expected = JSON.parse(fs.readFileSync('MIGRATION.json', 'utf8')).generator_blob_sha;
+ // Compare against this checkout, so later city revisions can deploy normally.
+ const expected = Object.fromEntries(['citylab.js','districts.js'].map(name=>{
+  const bytes=fs.readFileSync(name);
+  return [name,crypto.createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')];
+ }));
  let ready = false;
  for (let i = 0; i < 30; i++) {
   try {
@@ -19,7 +23,7 @@ const crypto = require('node:crypto');
   if (ready) break;
   await new Promise(r=>setTimeout(r,6000));
  }
- if (!ready) throw new Error('Live site did not serve the migrated source within the deployment window.');
+ if (!ready) throw new Error('Live site did not serve the checked-out source within the deployment window.');
  const browser = await chromium.launch({headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
  try {
   const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});

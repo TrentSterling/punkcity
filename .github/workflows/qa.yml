@@ -24,23 +24,25 @@ jobs:
           npm init -y
           npm install --ignore-scripts playwright@1.56.1
           npx playwright install --with-deps chromium
-      - name: Test geometry, movement, relative hosting and offline build
+      - name: Test geometry, starter access, relative hosting and offline build
         run: |
           node --check citylab.js
           node --check districts.js
-          node test-districts.mjs
+          node --check urbanism.js
+          node --check facades.js
+          node test-urbanism.mjs
           node check_locomotion.mjs
           python3 build_standalone.py
-          git diff --exit-code -- HACKERPUNK-Citylab-v0.2.html
+          git diff --exit-code -- HACKERPUNK-Citylab-v0.3.html
           mkdir -p /tmp/punkcity-preview
           ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
           python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
-          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v02.cjs
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v03.cjs
       - name: Verify deployed Pages URL
         run: NODE_PATH=/tmp/punkcity-deps/node_modules node tools/smoke-live.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: punkcity-verification
-          path: qa-v02/
+          path: qa-v03/
           retention-days: 30

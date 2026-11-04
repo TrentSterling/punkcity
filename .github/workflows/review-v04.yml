@@ -1,0 +1,63 @@
+name: Punkcity sci-fi architecture review
+on:
+  push:
+    branches: [iteration/scifi-architecture-v04]
+    paths: ['scifi.js', 'tools/integrate-scifi-v04.py', 'tools/refine-scifi-v04.py', '.github/workflows/review-v04.yml']
+permissions:
+  contents: write
+concurrency:
+  group: punkcity-scifi-review
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Integrate source-checked architecture
+        run: |
+          python3 -c "from pathlib import Path; import subprocess; s=Path('citylab.js').read_text(); subprocess.run(['python3','tools/integrate-scifi-v04.py'],check=True) if \"VERSION='0.3.0'\" in s else None"
+          if [ -f tools/refine-scifi-v04.py ]; then python3 tools/refine-scifi-v04.py; fi
+      - name: Verify geometry and starter stair traversal
+        run: |
+          node --check scifi.js
+          node --check citylab.js
+          node test-scifi.mjs
+          python3 build_standalone.py
+      - name: Install browser verifier
+        run: |
+          mkdir -p /tmp/punkcity-deps
+          cd /tmp/punkcity-deps
+          npm init -y
+          npm install --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Render districts and check offline build
+        run: |
+          mkdir -p /tmp/punkcity-preview
+          ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
+          python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v04.cjs
+      - name: Save verified integration
+        run: |
+          git config user.name 'Trent'
+          git config user.email 'trentsterling@gmail.com'
+          git add citylab.js districts.js urbanism.js scifi.js index.html build_standalone.py qa-v04.cjs test-scifi.mjs HACKERPUNK-Citylab-v0.4.html
+          git diff --cached --quiet || git commit -m 'Integrate armored sci-fi city architecture and verified offline build'
+          git push origin HEAD:iteration/scifi-architecture-v04
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: punkcity-v04-review
+          path: |
+            qa-v04/
+            HACKERPUNK-Citylab-v0.4.html
+            *.js
+            *.mjs
+            *.cjs
+            index.html
+            build_standalone.py
+            tools/integrate-scifi-v04.py
+          retention-days: 30

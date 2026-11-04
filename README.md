@@ -1,31 +1,29 @@
 # Punkcity
 
-HACKERPUNK Citylab 0.3. Streets-first sci-fi city and desktop traversal study.
+HACKERPUNK Citylab 0.4. A streets-first procedural sci-fi city and desktop traversal study.
 
-Live: https://tront.xyz/punkcity/ . Canonical repository: TrentSterling/punkcity, main. This is separate from the HACKERPUNK marketing website in TrentSterling/punk. Keep runtime assets relative; do not add a CNAME. HACKERPUNK-Citylab-v0.3.html includes its pinned renderer for offline use.
+Live: https://tront.xyz/punkcity/ . Canonical repository: TrentSterling/punkcity, main. This is separate from the HACKERPUNK marketing website in TrentSterling/punk. Keep runtime assets relative; do not add a CNAME. HACKERPUNK-Citylab-v0.4.html contains the pinned renderer and runs offline.
 
-## The 0.3 iteration
+## Architecture
 
-The six districts and ground street reservations remain. Repeated deck rings are replaced by 16 connected upper squares and 16 cross-block connections. Six switchback stairways link the network to the ground without equipment. Building envelopes reserve courts and through-routes before construction. Doorways, entrance pavilions, loading bays, shopfronts and roof terraces give those routes destinations. The building assemblies include podiums, offset towers, setbacks, housing balconies, cooling infrastructure and planted terraces. Distant context follows a block pattern instead of scattered isolated skyscrapers.
-
-Facades use a single wall shell, filtered full bays, stable per-building room identity, separate glass/wall roughness and night-only window glow. Small details remain non-colliding. This iteration does not import commercial environment-pack assets or external textures.
+The six districts and 36-block street plan retain 16 connected upper squares, 16 upper links and six switchback stairways. Public approaches and courts are reserved before buildings. The 0.4 kit replaces modern office-window grids with larger panel bays, cut-corner casings, colored armor, stepped tower crowns, cooling structures, roof machinery, habitat balconies and original street graphics. Mechanical layers and cable runs have supports. All eight billboard graphics share a generated texture atlas. See RELEASE_04.md for the scope and known limitations.
 
 ## Controls
 
-WASD plus right-drag look; Shift faster; E/Q vertical in fly mode. F switches fly/walk. E climbs structural surfaces without designated handholds. Space jumps; hold airborne with augmented equipment for thrust. 1 human / 2 jump-jet / 3 grapple. L low gravity. In walk mode click to capture the pointer, then hold left mouse for a tier-3 grapple. Esc releases capture.
+WASD plus right-drag look; Shift faster; E/Q vertical flight; F fly/walk; E climbs structural surfaces without designated handholds. Space jumps or holds thrust with upgraded gear. 1 human / 2 jump-jet / 3 grapple. L low gravity. In walk mode click to capture the pointer, then hold left mouse for tier-3 grapple. Esc releases capture.
 
-B tours districts; V viewpoints; R rerolls; T enters seed; G greybox; Alt+D dressing; N lighting; O optional SSAO; [ and ] height; Tab hides HUD; H controls; J exports data; P screenshot.
+B tours districts; V viewpoints; R rerolls; T enters a seed; G greybox; Alt+D dressing; N daylight/overcast/night; O optional SSAO; [ and ] height; Tab hides HUD; H controls; J exports data; P captures a screenshot.
 
-## Maintain and test
+## Source and checks
 
-urbanism.js owns block envelopes, upper-route reservations, stairs and their geometry. districts.js owns street surfaces, architectural shell primitives and surface auditing. facades.js owns procedural glazing. citylab.js owns rendering, collision, movement and the WebGL texture-backed HUD.
+scifi.js owns the hard-surface art kit, tower assemblies, panel shader and graphics atlas. urbanism.js owns block envelopes and public movement routes. districts.js owns streets, shells and registered surface audits. citylab.js owns the renderer, GPU-texture HUD and desktop controller. facades.js retains paving and legacy material helpers.
 
-Serve the repository beneath /punkcity/ to check relative deployment paths. Run `node test-urbanism.mjs` and `python3 build_standalone.py` from the root. `qa-v03.cjs` uses Playwright and accepts CITYLAB_BASE. It renders one frame at a time on SwiftShader; this is not a hardware-performance benchmark. The geometry suite checks five seeds at three height settings, the upper graph, ground/deck ownership and reserved mass clearances. It also walks all six staircases using the actual desktop movement functions in a headless fixture. These checks do not establish every-viewpoint freedom from z-fighting.
+Serve the repository beneath /punkcity/ to check relative hosting. From the root run `node test-scifi.mjs` and `python3 build_standalone.py`. `qa-v04.cjs` uses Playwright and accepts CITYLAB_BASE. The main workflow tests geometry, walks all six stairs, captures the districts, tests offline startup and compares the live site against the committed source hashes. Historical source-patch scripts must not be rerun against current code.
 
 ## Boundaries
 
-Not a finished game, VR rig or claim of commercial-art parity. Streets remain an orthogonal authored grammar with seeded variation, not the full CityWorks street graph. The upper network is authored rather than a general parkour optimizer. Doorways are visual destinations; building interiors are not enterable. Tapered buildings use conservative AABB collision. Distant context is non-colliding. No missions, progression, multiplayer, streaming or Quest performance qualification.
+This is not a finished VR game or a claim of reference-pack parity. It is a roughly half-kilometre, authored orthogonal district grammar, not the complete 2 km Unity world. Interiors are not enterable. Small dressing is largely non-colliding, structural collision is simplified and background buildings are scenery. No missions, progression, multiplayer, streaming or Quest performance qualification is implied. Surface audits cover registered surfaces and exclusions, not every possible triangle pair.
 
 ## Provenance
 
-REFERENCE-STUDY.md records the earlier CityWorks, Metroforge and Slop New York study. The 0.3 layout uses original implementations of court reservations, coherent envelopes and endpoint-based elevated streets. greggman/gen-city-auto's street and always-resident city geometry were additionally consulted. This is not a port of those complete generators. The reference repositories were not modified. Three.js's MIT notice remains in vendor/THREE-LICENSE. Historical one-time integration tools must not be rerun against current source.
+REFERENCE-STUDY.md documents CityWorks, Metroforge and Slop New York research; greggman/gen-city-auto was also consulted during the preceding layout iteration. The supplied sci-fi city screenshots informed the new art direction without importing commercial assets. Generated geometry and advertising graphics are original. Three.js's MIT notice remains in vendor/THREE-LICENSE. All references and the separate marketing repository remain unchanged.

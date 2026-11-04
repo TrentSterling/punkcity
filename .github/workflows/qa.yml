@@ -29,20 +29,19 @@ jobs:
           node --check citylab.js
           node --check districts.js
           node --check urbanism.js
-          node --check facades.js
-          node test-urbanism.mjs
-          node check_locomotion.mjs
+          node --check scifi.js
+          node test-scifi.mjs
           python3 build_standalone.py
-          git diff --exit-code -- HACKERPUNK-Citylab-v0.3.html
+          git diff --exit-code -- HACKERPUNK-Citylab-v0.4.html
           mkdir -p /tmp/punkcity-preview
           ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
           python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
-          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v03.cjs
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v04.cjs
       - name: Verify deployed Pages URL
         run: NODE_PATH=/tmp/punkcity-deps/node_modules node tools/smoke-live.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: punkcity-verification
-          path: qa-v03/
+          path: qa-v04/
           retention-days: 30

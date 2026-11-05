@@ -1,6 +1,8 @@
+import {generateNeighborhoodProp} from './neighborhood-props.js';
 import {propKit} from './prop-kit.js';
 export function generateRoofServices(api,sci,placements){
  for(const p of placements.filter(p=>p.layer==='rooftops'))api.B.scope('rooftops',p.id,()=>{
+  if(generateNeighborhoodProp(api,sci,p))return;
   const{box,casing,cyl,bodyCollider,planter,palette:c}=propKit(api,sci,p);
   if(p.type==='cooling'){
    box(0,.12,0,3.6,.24,2.6,'steel');for(const sx of[-1,1]){cyl(sx*.85,1.29,0,.64,2.1,c.edge);cyl(sx*.85,1.42,0,.7,.22,c.armor);cyl(sx*.85,2.39,0,.49,.14,'carbon');box(sx*.85,.7,1,.14,1,.14,'copper');}box(0,.35,.65,2,.17,.17,'copper');bodyCollider(0,1.2,0,3.6,2.4,2.6);

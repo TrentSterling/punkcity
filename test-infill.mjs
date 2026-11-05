@@ -39,7 +39,7 @@ for(const s of stairs){
 }
 return output;`);
 const stairWalk=run(THREE,boxes,compiled.urban.stairs);
-const report={revision:'0.5.0',cases:results,stairWalk,pass:results.every(r=>r.ok&&r.deterministic)&&stairWalk.every(s=>s.reachedSquare)};
-fs.mkdirSync(path.join(ROOT,'qa-v05'),{recursive:true});fs.writeFileSync(path.join(ROOT,'qa-v05','geometry.json'),JSON.stringify(report,null,2));
+const report={revision:'0.6.0',cases:results,stairWalk,pass:results.every(r=>r.ok&&r.deterministic)&&stairWalk.every(s=>s.reachedSquare)};
+fs.mkdirSync(path.join(ROOT,'qa-v06'),{recursive:true});fs.writeFileSync(path.join(ROOT,'qa-v06','geometry.json'),JSON.stringify(report,null,2));
 console.log(JSON.stringify({cases:results.length,geometryPass:results.every(r=>r.ok&&r.deterministic),audit:results[5],stairWalk,pass:report.pass},null,2));
 if(!report.pass)process.exitCode=1;

@@ -137,7 +137,7 @@ export function compileDistricts(api,data){
   if(B.scope)B.scope('streets','ground',streetGrid);else streetGrid();
   const buildApi={B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo};
   const urban=compileUrbanism(buildApi,data);
-  const infill=planInfill(data,{ground,decks,buildings,urban},B.items||[]);
+  const infill=planInfill(data,{ground,decks,buildings,urban},B.items||[],api.infillOptions||{});
   if(B.scope){const kit=createScifiKit(buildApi,data);generateFrontage(buildApi,kit,infill.placements);generateStreetServices(buildApi,kit,infill.placements);generateRoofServices(buildApi,kit,infill.placements);}
   return {ground,decks,buildings,artifacts,urban,infill};
 }

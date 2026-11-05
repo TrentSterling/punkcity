@@ -7,7 +7,7 @@ import {createScifiKit} from './scifi.js';
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const FLOOR=.28,LEVEL=16,PATH=7,PLAZA=12;
 const round=n=>Math.round(n*1000)/1000;
-export const URBAN_REVISION='0.5.0';
+export const URBAN_REVISION='0.6.0';
 
 export function planUrbanism(city){
   city.version=URBAN_REVISION;city.upperLinks=[];

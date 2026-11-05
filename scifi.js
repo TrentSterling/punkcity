@@ -82,7 +82,7 @@ export function installScifiMaterials(mats,surface){
 }
 export function createScifiKit(api,city){
  const {B,shell,flat,plant,pipe,rail,addGeo,indexCollider}=api;
- const records={revision:'0.5.0',crowns:[],panels:0,screens:0,kiosks:0,cableRuns:0};
+ const records={revision:'0.6.0',crowns:[],panels:0,screens:0,kiosks:0,cableRuns:0};
  const pose=(x,y,z,rot=0)=>new THREE.Matrix4().compose(V(x,y,z),new THREE.Quaternion().setFromAxisAngle(V(0,1,0),rot),V(1,1,1));
  // Cut-corner face with real depth, not a nearly coplanar decal on another face.
  function casing(x,y,z,w,h,d,mat,rot=0,cut=.25){

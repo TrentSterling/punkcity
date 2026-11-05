@@ -1,0 +1,64 @@
+name: Punkcity infill and surface review
+on:
+  push:
+    branches: ['iteration/infill-surfaces-v05']
+permissions:
+  contents: write
+concurrency:
+  group: punkcity-v05-review
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Integrate source-checked revision
+        run: |
+          if grep -q "const VERSION='0.4.0'" citylab.js; then python3 tools/integrate-v05.py; fi
+          python3 tools/prepare-v05-tests.py
+          node --check citylab.js
+          node --check qa-v05.cjs
+      - name: Geometry, reservations, stair walking and repaired-face regression
+        run: |
+          node --expose-gc test-infill.mjs
+          node --expose-gc test-surfaces.mjs
+          node check_locomotion.mjs
+          python3 build_standalone.py
+      - name: Install browser verifier
+        run: |
+          mkdir -p /tmp/punkcity-deps
+          cd /tmp/punkcity-deps
+          npm init -y
+          npm install --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Inspect districts, isolated generators and offline build
+        run: |
+          mkdir -p /tmp/punkcity-preview
+          ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
+          python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v05.cjs
+      - name: Save tested integration
+        run: |
+          git config user.name 'Trent'
+          git config user.email 'trentsterling@gmail.com'
+          git add citylab.js districts.js urbanism.js scifi.js index.html build_standalone.py test-infill.mjs qa-v05.cjs HACKERPUNK-Citylab-v0.5.html
+          git diff --cached --quiet || git commit -m 'Integrate reserved street infill and exposed surface ownership'
+          git push origin HEAD:iteration/infill-surfaces-v05
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: punkcity-v05-review
+          path: |
+            *.js
+            *.mjs
+            *.py
+            index.html
+            HACKERPUNK-Citylab-v0.5.html
+            qa-v05/
+            tools/
+            vendor/
+          retention-days: 30

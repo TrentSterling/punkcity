@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');
 const crypto=require('node:crypto');
-const files=['citylab.js','districts.js','urbanism.js','facades.js','scifi.js','geometry-batch.js','surface-ownership.js','placement.js','prop-kit.js','frontage.js','street-services.js','roof-services.js'];
+const files=['citylab.js','districts.js','urbanism.js','facades.js','scifi.js','geometry-batch.js','surface-ownership.js','placement.js','prop-kit.js','frontage.js','street-services.js','roof-services.js','neighborhoods.js'];
 const digest=text=>{const b=Buffer.from(text);return crypto.createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');};
 (async()=>{
  const base=process.env.LIVE_BASE||'https://tront.xyz/punkcity/';
@@ -31,11 +31,11 @@ const digest=text=>{const b=Buffer.from(text);return crypto.createHash('sha1').u
   await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>{if(cb.name==='frame'){window.__testFrame=cb;return 0;}return raf(cb);};});
   const response=await page.goto(base+'?capture=1&release='+version,{waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>window.citylab?.ready,null,{timeout:60000});await page.evaluate(()=>window.__testFrame(performance.now()));
-  fs.mkdirSync('qa-v05',{recursive:true});await page.screenshot({path:'qa-v05/live.png',timeout:60000});
-  await page.evaluate(()=>{citylab.visitInfill(0);window.__testFrame(performance.now());});await page.screenshot({path:'qa-v05/live-infill.png',timeout:60000});
+  fs.mkdirSync('qa-v06',{recursive:true});await page.screenshot({path:'qa-v06/live.png',timeout:60000});
+  await page.evaluate(()=>{citylab.visitInfill(0);window.__testFrame(performance.now());});await page.screenshot({path:'qa-v06/live-infill.png',timeout:60000});
   const stats=await page.evaluate(()=>citylab.stats()),audit=await page.evaluate(()=>citylab.validate());const outside=requests.filter(u=>!u.startsWith(base));
   const report={url:page.url(),status:response.status(),coreHashesVerified:true,verifiedFiles:files,errors,failed,outsideAssetRequests:outside,requestCount:requests.length,stats,audit};
-  fs.writeFileSync('qa-v05/live-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
-  if(response.status()!==200||errors.length||failed.length||outside.length||stats.version!==version||stats.districts!==6||stats.blocks!==36||!audit.ok||audit.groundStairs!==6||!stats.infill?.ok||stats.infill.placements<100||!stats.surfaceRepair)throw Error('Live verification failed');
+  fs.writeFileSync('qa-v06/live-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+  if(response.status()!==200||errors.length||failed.length||outside.length||stats.version!==version||stats.districts!==6||stats.blocks!==36||!audit.ok||audit.groundStairs!==6||!stats.infill?.ok||stats.infill.placements<600||!stats.surfaceRepair)throw Error('Live verification failed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

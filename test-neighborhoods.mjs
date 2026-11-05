@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {compileFixture} from './tools/compile-fixture.mjs';
+import {moduleURI} from './tools/resolve-local.mjs';
+const {overlap}=await import(moduleURI('./placement.js'));
+const {EXTRA_DIMS}=await import(moduleURI('./neighborhoods.js'));
+const f=compileFixture(),p=f.compiled.infill.placements,types=new Set(p.map(p=>p.type));
+assert.equal(p.filter(p=>!p.newContent).length,268,'The previous infill population must be retained');
+assert(p.length>=600,'Expansion should not silently disappear');
+assert(Object.keys(EXTRA_DIMS).every(t=>types.has(t)),'Default seed should showcase every new family');
+assert(p.filter(p=>p.newContent&&p.layer==='frontage').every(p=>p.customerAccess),'New shops need reserved customer space');
+const access=[];for(const a of p.filter(p=>p.customerAccess))for(const b of p)if(a!==b&&overlap(a.customerAccess,b,.09))access.push([a.id,b.id]);
+assert.equal(access.length,0,'Props intrude into shop approaches');
+const report={pass:true,assemblies:p.length,newAssemblies:p.filter(p=>p.newContent).length,newTypes:Object.keys(EXTRA_DIMS).length,totalTypes:types.size,customerAccessConflicts:access,byType:f.compiled.infill.audit.byType};
+fs.mkdirSync('qa-v06',{recursive:true});fs.writeFileSync('qa-v06/neighborhoods.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));f.dispose();

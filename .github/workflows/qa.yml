@@ -19,13 +19,14 @@ jobs:
           node-version: '22'
       - name: Verify geometry, surface ownership and starter access
         run: |
-          for f in citylab.js districts.js urbanism.js scifi.js geometry-batch.js surface-ownership.js placement.js prop-kit.js frontage.js street-services.js roof-services.js; do node --check "$f"; done
+          for f in citylab.js districts.js urbanism.js scifi.js geometry-batch.js surface-ownership.js placement.js prop-kit.js frontage.js street-services.js roof-services.js neighborhoods.js; do node --check "$f"; done
           node --expose-gc test-infill.mjs
           node --expose-gc test-surfaces.mjs
           node --expose-gc test-grounding.mjs
+          node --expose-gc test-neighborhoods.mjs
           node check_locomotion.mjs
           python3 build_standalone.py
-          git diff --exit-code -- HACKERPUNK-Citylab-v0.5.html
+          git diff --exit-code -- HACKERPUNK-Citylab-v0.6.html
       - name: Install browser test dependency
         run: |
           mkdir -p /tmp/punkcity-deps
@@ -38,12 +39,12 @@ jobs:
           mkdir -p /tmp/punkcity-preview
           ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
           python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
-          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v05.cjs
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v06.cjs
       - name: Verify deployed Pages URL and source hashes
         run: NODE_PATH=/tmp/punkcity-deps/node_modules node tools/smoke-live.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: punkcity-verification
-          path: qa-v05/
+          path: qa-v06/
           retention-days: 30

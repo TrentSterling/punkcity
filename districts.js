@@ -1,3 +1,4 @@
+import {auditArchitecture} from './architecture.js';
 import {compileStreets,installStreetMaterials,auditStreets} from './streets.js';
 import {generateNeighborhoods} from './neighborhoods.js';
 import {planInfill} from './placement.js';
@@ -62,7 +63,7 @@ export function compileDistricts(api,data){
   function slab(x,z,w,d,top,thick,mat,kind){B.box(x,top-thick/2,z,w,thick,d,mat,true);if(kind)(kind==='ground'?ground:decks).push({x,z,w,d,y:top,kind});}
   function rectangle(w,d,c=0){const a=w/2,b=d/2;c=Math.min(c,a*.5,b*.5);return c?[[-a+c,-b],[a-c,-b],[a,-b+c],[a,b-c],[a-c,b],[-a+c,b],[-a,b-c],[-a,-b+c]]:[[-a,-b],[a,-b],[a,b],[-a,b]];}
   // One shell owns each wall and cap. No outward bevel expansion or layered window boxes.
-  function shell(x,z,w,d,base,h,mat='facIvory',chamfer=1,topScale=1,shift=0,roof='dark',solid=true){
+  function shell(x,z,w,d,base,h,mat='facIvory',chamfer=1,topScale=1,shift=0,roof='dark',solid=true,identity=null){
     const p=rectangle(w,d,chamfer),positions=[],uvs=[],top=p.map(([a,b])=>[a*topScale+shift,b*topScale]);
     const tri=(a,b,c,ua,ub,uc)=>{positions.push(...a,...b,...c);uvs.push(...ua,...ub,...uc);};
     for(let i=0;i<p.length;i++){
@@ -71,7 +72,7 @@ export function compileDistricts(api,data){
       const a=[x+ax,base,z+az],b=[x+bx,base,z+bz],c=[x+btx,base+h,z+btz],d0=[x+atx,base+h,z+atz];
       tri(a,c,b,[0,0],[bay,floors],[bay,0]);tri(a,d0,c,[0,0],[0,floors],[bay,floors]);
     }
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.computeVertexNormals();g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(Math.round(((x*31+z*13+h*7)%991+991)%991)),1));addGeo(g,mat);
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.computeVertexNormals();g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(identity??Math.round(((x*31+z*13+h*7)%991+991)%991)),1));addGeo(g,mat);
     const cap=new THREE.Shape();top.forEach(([a,b],i)=>i?cap.lineTo(a,b):cap.moveTo(a,b));cap.closePath();const cg=new THREE.ShapeGeometry(cap);cg.rotateX(-pi/2);cg.translate(x,base+h,z);addGeo(cg,roof);
     if(solid)indexCollider(new THREE.Box3(V(x-w/2,base,z-d/2),V(x+w/2,base+h,z+d/2)));
     B.structures++;buildings.push({x,z,w,d,base,h,mat,topScale});return base+h;
@@ -136,5 +137,5 @@ export function auditDistricts(data,compiled){
   const{x:xs,z:zs,widthsX:wx,widthsZ:wz}=data.groundStreets;let blocked=0;
   for(const b of compiled.buildings){if(b.base>=12||b.x<xs[0]||b.x>xs[6]||b.z<zs[0]||b.z>zs[6])continue;for(let i=0;i<7;i++)if(b.x-b.w/2<xs[i]+wx[i]/2&&b.x+b.w/2>xs[i]-wx[i]/2)blocked++;for(let i=0;i<7;i++)if(b.z-b.d/2<zs[i]+wz[i]/2&&b.z+b.d/2>zs[i]-wz[i]/2)blocked++;}
   if(blocked)errors.push(`${blocked} building/road conflicts`);
-  const streetAudit=auditStreets(compiled.streets);errors.push(...streetAudit.errors);const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,streets:streetAudit,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
+  const architecture=auditArchitecture(data);errors.push(...architecture.errors);const streetAudit=auditStreets(compiled.streets);errors.push(...streetAudit.errors);const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,architecture,streets:streetAudit,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
 }

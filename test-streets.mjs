@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import * as THREE from './vendor/build/three.module.js';
 import {compileFixture} from './tools/compile-fixture.mjs';
 const f=compileFixture(),s=f.compiled.streets;
-assert(f.audit.ok,JSON.stringify(f.audit.errors));assert.equal(s.segments.length,84);assert.equal(s.junctions.length,49);assert.equal(s.crossings,120);assert.equal(s.ramps.length,240);assert.equal(f.compiled.infill.placements.length,688,'Street work must preserve default infill');
+assert(f.audit.ok,JSON.stringify(f.audit.errors));assert.equal(s.segments.length,84);assert.equal(s.junctions.length,49);assert.equal(s.crossings,120);assert.equal(s.ramps.length,240);assert(f.compiled.infill.placements.length>=600,'Massing variety must retain populated streets');
 let paired=0;
 for(const road of s.segments)if(road.crossings){
  for(const t of[road.a+4.2,road.b-4.2])for(const side of[-1,1]){

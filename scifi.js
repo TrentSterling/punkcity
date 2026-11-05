@@ -3,6 +3,8 @@
  * Fine panels are visual dressing; tower bodies/crowns retain structural collision.
  */
 import * as THREE from 'three';
+import {paletteFor} from './architecture.js';
+import {compileMassing} from './massing.js';
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),night={value:0};
 export const setScifiNight=value=>{night.value=value?1:0;};
 export const PALETTES=[
@@ -27,16 +29,17 @@ float cutBox(vec2 p,vec2 size,float cut,vec2 aa){vec2 a=abs(p);float d=max(max(a
   const aperture=type===1?'vec2(.43,.195)':type===2?'vec2(.28,.055)':type===3?'vec2(.325,.24)':'vec2(.32,.20)';
   s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
 vec2 cell=fract(cUV),idx=floor(cUV),aa=max(fwidth(cUV),vec2(.0003));
-float id=floor(cSeed+.5),identity=hashC(idx+vec2(id,id*.37));
+float id=floor(cSeed+.5),style=mod(floor(cSeed+.5),5.),identity=hashC(idx+vec2(id,id*.37));
 vec3 hull=diffuseColor.rgb;
+vec2 aperture=${aperture};if(style<.5)aperture=vec2(.42,.16);else if(style<1.5)aperture=vec2(.20,.30);else if(style<2.5)aperture=vec2(.35,.24);else if(style<3.5)aperture=vec2(.40,.08);
 float plate=cutBox(cell-.5,vec2(.482,.475),.065,aa);
-float inset=cutBox(cell-vec2(.5,.62),${aperture}+vec2(.036,.035),.03,aa);
-float window=cutBox(cell-vec2(.5,.62),${aperture},.027,aa);
+float inset=cutBox(cell-vec2(.5,.62),aperture+vec2(.036,.035),.03,aa);
+float window=cutBox(cell-vec2(.5,.62),aperture,.027,aa);
 float sill=cutBox(cell-vec2(.5,.28),vec2(.39,.047),.025,aa);
 float service=cutBox(cell-vec2(.68,.14),vec2(.17,.035),.01,aa);
 float lip=cutBox(cell-vec2(.5,.945),vec2(.40,.014),0.,aa);
 vec3 N=normalize(cN),T=normalize(cross(vec3(0,1,0),N)),eye=normalize(cameraPosition-cP);
-vec3 ro=vec3((cell-vec2(.5,.62))/${aperture},1.);
+vec3 ro=vec3((cell-vec2(.5,.62))/aperture,1.);
 vec3 rd=vec3(-dot(eye,T),-eye.y,-max(.18,dot(eye,N)));
 vec3 d=(sign(rd)-ro)/(rd+vec3(.00001));vec3 room=ro+rd*max(0.,min(d.x,min(d.y,d.z)));
 float back=step(.99,abs(room.z));
@@ -74,7 +77,7 @@ function makeAds(){
  return new THREE.MeshStandardMaterial({map:tex,emissiveMap:tex,emissive:0xffffff,emissiveIntensity:.48,roughness:.46,metalness:.05});
 }
 export function installScifiMaterials(mats,surface){
- for(const [name,col]of Object.entries({armorGold:0xe4a52f,armorOrange:0xcd6435,armorCoral:0xbb5d4d,armorTeal:0x378e8a,armorJade:0x729c70,armorPlum:0x81546f,armorBone:0xc9c5b5,armorSilver:0x819799}))mats[name]=surface(col,.62,.16,.025);
+ for(const [name,col]of Object.entries({armorGold:0xe4a52f,armorOrange:0xcd6435,armorCoral:0xbb5d4d,armorTeal:0x378e8a,armorJade:0x729c70,armorPlum:0x81546f,armorBone:0xc9c5b5,armorSilver:0x819799,armorCopper:0x976b48,armorSage:0x798773,armorBrick:0x8e4f3f,armorSlate:0x506678,armorTaupe:0x7d7061,armorGraphite:0x39454a,armorIce:0x91acb2}))mats[name]=surface(col,.62,.16,.025);
  mats.pink=new THREE.MeshStandardMaterial({color:0xf579cc,emissive:0xdd369d,emissiveIntensity:1.3,roughness:.4});
  for(const [name,color,type]of [['facIvory',0xacb3aa,0],['facSand',0xb08f65,0],['facRust',0xa95d46,0],['facBlue',0x4a777a,0],['facGlass',0x3e666b,1],['facDark',0x304c56,2],['facMarket',0x94647b,3]])mats[name]=panelMaterial(color,type);
  mats.pavement.color.set(0x76777d);mats.asphalt.color.set(0x29323b);mats.paint.color.set(0xe5bd5f);mats.steel.color.set(0x51636a);mats.concrete.color.set(0xb2b1a3);mats.rust.color.set(0xb76544);
@@ -82,7 +85,7 @@ export function installScifiMaterials(mats,surface){
 }
 export function createScifiKit(api,city){
  const {B,shell,flat,plant,pipe,rail,addGeo,indexCollider}=api;
- const records={revision:'0.6.0',crowns:[],panels:0,screens:0,kiosks:0,cableRuns:0};
+ const records={revision:'0.8.0',crowns:[],panels:0,screens:0,kiosks:0,cableRuns:0};
  const pose=(x,y,z,rot=0)=>new THREE.Matrix4().compose(V(x,y,z),new THREE.Quaternion().setFromAxisAngle(V(0,1,0),rot),V(1,1,1));
  // Cut-corner face with real depth, not a nearly coplanar decal on another face.
  function casing(x,y,z,w,h,d,mat,rot=0,cut=.25){
@@ -132,66 +135,12 @@ export function createScifiKit(api,city){
   }
   records.crowns.push({building:t.id,kind,base,top});
  }
- function tower(t,b,r){
-  const p=PALETTES[b.district],height=t.top-t.base,cap=Math.min(9,Math.max(3,height*.15)),bodyTop=t.top-cap;
-  if(b.district===5){
-   let ww=t.w*.96,dd=t.d*.95,z=t.z,y=t.base;const step=(height-cap)/3;
-   for(let i=0;i<3;i++){
-    shell(t.x,z,ww,dd,y,step,'facIvory',Math.min(2,dd*.16),1,0,'dark');band(t.x,z,ww,dd,y+step-1,.85,p.armor);
-    plant(t.x,z+dd/2-.9,Math.max(2,ww-2.6),1.35,y+step);y+=step;ww*=.83;dd*=.83;z-=.7;
-   }
-   crown(t,b,t.x,z,ww,dd,y,t.top);
-  }else if(b.district===2){
-   shell(t.x,t.z,t.w*.86,t.d*.86,t.base,bodyTop-t.base,'facDark',1.2,1,0,'steel');
-   for(const side of[-1,1]){
-    const xx=t.x+side*t.w*.46;shell(xx,t.z,t.w*.08,t.d*.72,t.base,height,p.armor,.25,1,0,'steel');
-    for(let y=t.base+3;y<bodyTop-1;y+=5){casing(t.x,y,t.z+side*(t.d*.43+.4),t.w*.65,3.2,.8,'steel',side<0?Math.PI:0,.45);for(let k=0;k<5;k++)strip(t.x,y-1+k*.47,t.z+side*(t.d*.43+.85),t.w*.56,.14,.24,'carbon');}
-   }
-   crown(t,b,t.x,t.z,t.w*.86,t.d*.86,bodyTop,t.top);
-  }else{
-   const step=height>45?2:1;let xx=t.x,zz=t.z,ww=t.w*.93,dd=t.d*.91,y=t.base;
-   for(let level=0;level<step;level++){
-    const hh=(bodyTop-t.base)/step,glass=b.district===1?'facGlass':b.district===4?'facMarket':t.mat;
-    shell(xx,zz,ww,dd,y,hh,glass,Math.min(2.3,ww*.14,dd*.14),1,0,'dark');
-    const rows=Math.max(1,Math.round(hh/7)),spacing=hh/rows;
-    for(let row=0;row<rows;row++){
-     const yy=y+row*spacing+1.1;band(xx,zz,ww,dd,yy,1.05,p.armor,.46);
-     if(b.district===3||b.district===4){
-      const bw=Math.max(2.8,ww*.62),front=zz+dd/2+.8;
-      // The usable balcony projects at most 1.7 m; existing host courts stay clear.
-      B.box(xx,yy+1.0,front,bw,.28,1.7,'steel',true);
-      casing(xx,yy+1.58,front+.75,bw-.2,.85,.22,p.armor,0,.18);
-      for(const s of[-1,1])B.box(xx+s*(bw/2-.15),yy+1.65,front,.14,1,1.6,'steel',false,true);
-     }
-    }
-    for(const side of[-1,1]){
-     const sx=xx+side*(ww/2-.55);
-     casing(sx,y+hh*.5,zz+dd/2+.4,1.0,hh-.4,.85,p.edge,0,.22);
-     casing(sx,y+hh*.5,zz-dd/2-.4,1.0,hh-.4,.85,p.edge,Math.PI,.22);
-     strip(sx,y+hh*.5,zz+dd/2+.87,.15,hh*.76,.07,p.glow);
-     B.beam(V(sx,y+.5,zz+dd/2+1.1),V(sx-side*.6,y+Math.min(8,hh*.3),zz+dd/2+.45),.65,p.armor,true);
-    }
-    y+=hh;xx-=ww*.085;zz-=dd*.03;ww*=.77;dd*=.80;
-   }
-   // Top mass is stepped, not another flat roof with one antenna.
-   const crownW=step===2?t.w*.73:t.w*.92,crownD=step===2?t.d*.73:t.d*.90;
-   crown(t,b,step===2?t.x-t.w*.079:t.x,step===2?t.z-t.d*.027:t.z,crownW,crownD,bodyTop,t.top);
-   if(b.district===1){
-    const sz=t.z+t.d*.46+.56,w=Math.min(t.w*.43,6),h=Math.min(17,height*.27);
-    screen(t.x-t.w*.18,t.base+height*.64,sz,w,h,0,(b.i+b.j)%2?1:7);
-   }
-  }
-  if(b.district===2||b.district===1){
-   const rr=Math.min(t.w,t.d)*.12,yy=t.top+.08;
-   B.instance('cyl',t.x,yy+.65,t.z,rr,1.3,rr,p.edge,true);
-   B.instance('cyl',t.x,yy+1.45,t.z,rr*.72,.3,rr*.72,'carbon',true);
-   B.instance('cyl',t.x,yy+1.7,t.z,rr*.52,.18,rr*.52,p.glow,true);
-  }
- }
+ function tower(t,b,r){return compileMassing({B,shell,band,casing,screen,plant},t,b,records);}
+
  function podium(m,b){
-  const p=PALETTES[b.district],x=m.x,z=m.z,w=m.w,d=m.d;
-  band(x,z,w,d,m.top-1.25,1.35,p.armor,.5);
-  band(x,z,w,d,5.5,.65,p.edge,.42);
+  const p=paletteFor(m,b),x=m.x,z=m.z,w=m.w,d=m.d;
+  band(x,z,w,d,m.top-.75,.7,m.design?.band===1?p.edge:p.armor,.38);
+  if(m.top>10)band(x,z,w,d,5.5,.3,p.edge,.25);
   for(const side of[-1,1]){
    const zz=z+side*(d/2+.37),rot=side<0?Math.PI:0,n=Math.max(1,Math.floor((w-3)/7));
    for(let i=0;i<n;i++){
@@ -217,7 +166,7 @@ export function createScifiKit(api,city){
   }
  }
  function shops(m,b){
-  const p=PALETTES[b.district],n=Math.max(1,Math.floor(m.w/8)),bay=m.w/n,z=m.z+m.d/2;
+  const p=paletteFor(m,b),n=Math.max(1,Math.floor(m.w/8)),bay=m.w/n,z=m.z+m.d/2;
   for(let i=0;i<n;i++){
    const x=m.x-m.w/2+(i+.5)*bay;
    casing(x,2.1,z+.18,bay-.6,3.8,.34,'carbon',0,.45);
@@ -238,7 +187,7 @@ export function createScifiKit(api,city){
   B.box(x,.36,z,1.65,.20,1.05,'steel',false,true);records.kiosks++;
  }
  function extras(b){
-  const p=PALETTES[b.district],north=b.masses.filter(m=>m.role.startsWith('north'));
+  const p=paletteFor(b.masses[0],b),north=b.masses.filter(m=>m.role.startsWith('north'));
   for(const m of north){
    const xx=m.x-m.w/2+2.5,zz=m.z+m.d/2+.65;
    if(m.w>10&&b.district!==0)kiosk(xx,zz+1,p,b.district%8);

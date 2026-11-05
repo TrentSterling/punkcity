@@ -1,8 +1,8 @@
 /** Small-scale kit shared by isolated frontage/service/roof generators. */
 import * as THREE from 'three';
-import {PALETTES} from './scifi.js';
+import {paletteFor} from './architecture.js';
 export function propKit(api,sci,p){
- const {B,indexCollider}=api,co=Math.cos(p.rot),si=Math.sin(p.rot),palette=PALETTES[p.district],scale=p.scaleXZ||1;
+ const {B,indexCollider}=api,co=Math.cos(p.rot),si=Math.sin(p.rot),palette=paletteFor(p),scale=p.scaleXZ||1;
  const point=(x,y,z)=>new THREE.Vector3(p.x+(co*x+si*z)*scale,p.y+y,p.z+(-si*x+co*z)*scale);
  const box=(x,y,z,w,h,d,mat='steel')=>{const v=point(x,y,z);B.box(v.x,v.y,v.z,w*scale,h,d*scale,mat,false,true,p.rot);};
  const casing=(x,y,z,w,h,d,mat=palette.armor,rot=0,cut=.18)=>{const v=point(x,y,z);sci.casing(v.x,v.y,v.z,w*scale,h,d*scale,mat,p.rot+rot,cut*scale);};

@@ -6,7 +6,7 @@
 const EPS = 1e-7, AREA = 1e-7, PLANE_EPS = 0.00025, TILE = 8;
 const RANK = {streets:0,context:1,buildings:10,traversal:20,armor:30,rooftops:40,services:40,frontage:40,signage:50};
 const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
-const area=p=>Math.abs(p.reduce((s,a,i)=>{const b=p[(i+1)%p.length];return s+a[0]*b[1]-a[1]*b[0];},0))*.5;
+const area=p=>p.length<3?0:Math.abs(p.slice(1,-1).reduce((s,a,i)=>s+cross(p[0],a,p[i+2]),0))*.5;
 // Minimum support-strip width distinguishes rounding slivers from actual faces.
 export function polygonWidth(p){
  let width=Infinity;
@@ -21,8 +21,10 @@ function bounds(p){return [Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1]
 const intersects=(a,b)=>Math.min(a[2],b[2])-Math.max(a[0],b[0])>EPS&&Math.min(a[3],b[3])-Math.max(a[1],b[1])>EPS;
 function clean(p){return p.filter((v,i)=>{const b=p[(i+p.length-1)%p.length];return Math.hypot(v[0]-b[0],v[1]-b[1])>EPS;});}
 function half(p,a,b,inside){
- const out=[];let prev=p[p.length-1],dp=cross(a,b,prev)*(inside?1:-1),pin=dp>=-EPS;
- for(const cur of p){const dc=cross(a,b,cur)*(inside?1:-1),cin=dc>=-EPS;if(cin!==pin){const t=dp/(dp-dc);out.push(prev.map((n,j)=>n+(cur[j]-n)*t));}if(cin)out.push(cur);prev=cur;dp=dc;pin=cin;}
+ const length=Math.hypot(b[0]-a[0],b[1]-a[1]);if(length<EPS)return p;
+ const distance=v=>{const d=cross(a,b,v)*(inside?1:-1)/length;return Math.abs(d)<=EPS?0:d;};
+ const out=[];let prev=p[p.length-1],dp=distance(prev),pin=dp>=0;
+ for(const cur of p){const dc=distance(cur),cin=dc>=0;if(cin!==pin){const t=dp/(dp-dc);out.push(prev.map((n,j)=>n+(cur[j]-n)*t));}if(cin)out.push(cur);prev=cur;dp=dc;pin=cin;}
  return clean(out);
 }
 /** Subtract a CCW convex clip polygon, preserving interpolated vertex payload. */

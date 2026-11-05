@@ -4,10 +4,11 @@
  */
 import * as THREE from 'three';
 import {createScifiKit} from './scifi.js';
+import {configureArchitecture} from './architecture.js';
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const FLOOR=.28,LEVEL=16,PATH=7,PLAZA=12;
 const round=n=>Math.round(n*1000)/1000;
-export const URBAN_REVISION='0.6.0';
+export const URBAN_REVISION='0.8.0';
 
 export function planUrbanism(city){
   city.version=URBAN_REVISION;city.upperLinks=[];
@@ -82,7 +83,7 @@ export function planUrbanism(city){
   }
   city.elevatedSurfaces=elevations;
   city.routeGraph={nodes:city.blocks.filter(b=>b.deck).map(b=>({id:b.id,position:[b.x,LEVEL,b.z],program:b.program,groundAccess:b.accessStair,destination:b.masses[0].id})),edges:city.upperLinks.map(l=>({a:l.a,b:l.b}))};
-  return city;
+  return configureArchitecture(city);
 }
 
 export function compileUrbanism(api,city){
@@ -116,7 +117,7 @@ export function compileUrbanism(api,city){
   }
   function shop(m,b){run('frontage',m.id+'/shops',()=>sci.shops(m,b));}
   function podium(m,b){
-    shell(m.x,m.z,m.w,m.d,FLOOR,m.top-FLOOR,m.mat,.65,1,0,m.top===LEVEL?'deck':'dark');
+    shell(m.x,m.z,m.w,m.d,FLOOR,m.top-FLOOR,m.mat,.65,1,0,m.top===LEVEL?'deck':'dark',true,(m.design.seed%10000)*5+m.design.facade);
     // Coarse architectural division, not a cage of trim around every window.
     const sz=m.z+m.d/2;
     if(b.district!==0)for(const s of[-1,1]){

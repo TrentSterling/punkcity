@@ -17,16 +17,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify geometry, surface ownership and starter access
+      - name: Verify streets, surface ownership and starter access
         run: |
-          for f in citylab.js districts.js urbanism.js scifi.js geometry-batch.js surface-ownership.js placement.js prop-kit.js frontage.js street-services.js roof-services.js neighborhoods.js; do node --check "$f"; done
+          for f in citylab.js districts.js urbanism.js scifi.js geometry-batch.js surface-ownership.js placement.js prop-kit.js frontage.js street-services.js roof-services.js neighborhoods.js streets.js; do node --check "$f"; done
+          node --expose-gc test-streets.mjs
           node --expose-gc test-infill.mjs
           node --expose-gc test-surfaces.mjs
           node --expose-gc test-grounding.mjs
           node --expose-gc test-neighborhoods.mjs
           node check_locomotion.mjs
+          cp qa-v06/geometry.json qa-v06/surfaces.json qa-v06/grounding.json qa-v06/neighborhoods.json qa-v07/
           python3 build_standalone.py
-          git diff --exit-code -- HACKERPUNK-Citylab-v0.6.html
+          git diff --exit-code -- HACKERPUNK-Citylab-v0.7.html
       - name: Install browser test dependency
         run: |
           mkdir -p /tmp/punkcity-deps
@@ -34,17 +36,18 @@ jobs:
           npm init -y
           npm install --ignore-scripts playwright@1.56.1
           npx playwright install --with-deps chromium
-      - name: Test relative hosting, generator isolation and offline build
+      - name: Test street views, relative hosting, isolation and offline build
         run: |
           mkdir -p /tmp/punkcity-preview
           ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
           python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
-          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v06.cjs
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-streets.cjs
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v07.cjs
       - name: Verify deployed Pages URL and source hashes
         run: NODE_PATH=/tmp/punkcity-deps/node_modules node tools/smoke-live.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: punkcity-verification
-          path: qa-v06/
+          path: qa-v07/
           retention-days: 30

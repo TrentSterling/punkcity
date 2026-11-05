@@ -1,9 +1,9 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');const crypto=require('node:crypto');
-const files=['retrofit.js','citylab.js','districts.js','urbanism.js','facades.js','scifi.js','geometry-batch.js','surface-ownership.js','placement.js','prop-kit.js','frontage.js','street-services.js','roof-services.js','neighborhoods.js','streets.js','architecture.js','massing.js'];
+const files=['inhabited-facades.js','places.js','place-lighting.js','retrofit.js','citylab.js','districts.js','urbanism.js','facades.js','scifi.js','geometry-batch.js','surface-ownership.js','placement.js','prop-kit.js','frontage.js','street-services.js','roof-services.js','neighborhoods.js','streets.js','architecture.js','massing.js'];
 const digest=text=>{const b=Buffer.from(text);return crypto.createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');};
 (async()=>{
- const base=process.env.LIVE_BASE||'https://tront.xyz/punkcity/',out='qa-v09';
+ const base=process.env.LIVE_BASE||'https://tront.xyz/punkcity/',out='qa-v10';
  const expected=Object.fromEntries(files.map(name=>[name,digest(fs.readFileSync(name))]));
  const version=/const VERSION='([^']+)'/.exec(fs.readFileSync('citylab.js','utf8'))?.[1];if(!version)throw Error('No source version');
  let ready=false;
@@ -23,13 +23,15 @@ const digest=text=>{const b=Buffer.from(text);return crypto.createHash('sha1').u
   await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>{if(cb.name==='frame'){window.__testFrame=cb;return 0;}return raf(cb);};});
   const response=await page.goto(base+'?capture=1&release='+version,{waitUntil:'networkidle',timeout:60000});await page.waitForFunction(()=>window.citylab?.ready,null,{timeout:60000});
   await page.evaluate(()=>window.__testFrame(performance.now()));fs.mkdirSync(out,{recursive:true});await page.screenshot({path:out+'/live.png',timeout:60000});
-  await page.evaluate(()=>{citylab.visitBuilding(0);window.__testFrame(performance.now());});await page.screenshot({path:out+'/live-building.png',timeout:60000});
+  await page.evaluate(()=>{citylab.visitPlace(0);window.__testFrame(performance.now());});await page.screenshot({path:out+'/live-place.png',timeout:60000});
+  const first=await page.evaluate(()=>citylab.stats().camera);await page.keyboard.press('KeyY');const second=await page.evaluate(()=>citylab.stats().camera);await page.keyboard.press('Shift+KeyY');const returned=await page.evaluate(()=>citylab.stats().camera);
+  if(JSON.stringify(first)===JSON.stringify(second)||JSON.stringify(first)!==JSON.stringify(returned))throw Error('Live place tour failed');
+  await page.evaluate(()=>{citylab.lighting(2);window.__testFrame(performance.now());});await page.screenshot({path:out+'/live-night.png',timeout:60000});
   await page.keyboard.press('KeyZ');if(await page.evaluate(()=>citylab.config.retrofit))throw Error('Live retrofit toggle failed');
   await page.keyboard.press('KeyX');if(!await page.evaluate(()=>citylab.config.retrofit))throw Error('Live retrofit tour failed');
-  await page.evaluate(()=>window.__testFrame(performance.now()));await page.screenshot({path:out+'/live-retrofit.png',timeout:60000});
   const stats=await page.evaluate(()=>citylab.stats()),audit=await page.evaluate(()=>citylab.validate()),outside=requests.filter(u=>!u.startsWith(base));
-  const report={url:page.url(),status:response.status(),coreHashesVerified:true,verifiedFiles:files,errors,failed,outsideAssetRequests:outside,requestCount:requests.length,retrofitControlsVerified:true,stats,audit};
+  const report={url:page.url(),status:response.status(),coreHashesVerified:true,verifiedFiles:files,errors,failed,outsideAssetRequests:outside,requestCount:requests.length,placeTourVerified:true,retrofitControlsVerified:true,stats,audit};
   fs.writeFileSync(out+'/live-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
-  if(response.status()!==200||errors.length||failed.length||outside.length||stats.version!==version||stats.districts!==6||stats.blocks!==36||!audit.ok||audit.groundStairs!==6||!stats.infill?.ok||stats.infill.placements<600||!stats.surfaceRepair||!audit.architecture?.ok||Object.keys(audit.architecture.families).length!==8||!stats.retrofit?.ok||stats.retrofit.assemblies<100)throw Error('Live verification failed');
+  if(response.status()!==200||errors.length||failed.length||outside.length||stats.version!==version||stats.districts!==6||stats.blocks!==36||!audit.ok||audit.groundStairs!==6||!stats.infill?.ok||stats.infill.placements<600||!stats.surfaceRepair||!audit.architecture?.ok||Object.keys(audit.architecture.families).length!==8||!stats.retrofit?.ok||stats.retrofit.assemblies<100||!stats.places?.ok||stats.places.upperRooms!==16||stats.places.tenantRows<10)throw Error('Live verification failed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

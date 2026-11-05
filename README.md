@@ -1,37 +1,25 @@
-# Punkcity 0.9
+# Punkcity 0.10
 
-HACKERPUNK streets-first sci-fi city generator. Canonical repository: TrentSterling/punkcity. Viewer: https://tront.xyz/punkcity/ . The separate TrentSterling/punk website is unchanged.
+HACKERPUNK streets-first procedural city generator. Canonical repository: TrentSterling/punkcity. Live viewer: https://tront.xyz/punkcity/. The separate TrentSterling/punk website is unchanged.
 
-## Building identities instead of district uniforms
+## Inhabited-city critique pass
 
-Eight massing families and twelve curated palettes are selected per building, with nearby-repeat penalties. Setbacks, unequal twin towers, blades, courtyards, shoulders, stepped terraces, lantern crowns and offset cores produce different silhouettes. Window arrangements, trim direction and roof profiles vary independently. Districts retain their functional uses without imposing a single architectural color. The default scene contains 49 tower sites and 734 infill assemblies.
+Human-scale facade bays and stories replace the oversized repeated panel treatment. Wall-backed tenant rows and elevated shelter destinations complement the existing eight tower families, street infrastructure, upper routes and neighborhood props. Equipment distinguishes food/coffee, repair/fabrication, laundries, plant shops and arcade rows. Sign imagery follows the tenant meaning. Shared light-pool textures give ground and upper activities local nighttime illumination.
 
-The road skeleton, 36 blocks, sixteen upper links, sixteen connected upper squares and six starter stairs remain. Frontage widths, depths and heights are revised inside existing envelopes; infill is regenerated against the updated structures. Small props are static environmental content, not merchant or traffic simulation.
+Read RELEASE_10.md for specific changes, verification and limits. These are static environmental assemblies, not NPCs, merchant simulation or playable arcade games. The grid and finite world remain; the visual benchmark is not claimed complete.
 
 ## Viewer
 
-WASD plus right-drag to move/look. Shift faster, E/Q vertical flight, F walk/fly. M tours architectural families, Shift+M reverses. G greybox. C street inspection, B district tour, V viewpoints, K neighborhood tour, Shift+K previous. U toggles infill; I isolates generator layers, Shift+I restores all. N cycles lighting. 1/2/3 equipment previews. J exports layout, building identities, infill and collision; H shows controls.
+WASD and right-drag move/look; Shift faster; E/Q vertical flight; F walk/fly. Y tours new places, Shift+Y backward. N cycles daylight/overcast/night. M inspects building families; X retrofits; Z compares retrofit on/off; C inspects streets; K tours neighborhood props; B tours districts. I isolates generator layers, including places, and Shift+I restores all. G greybox; U infill toggle; H controls. Equipment previews remain on 1/2/3. J exports the city recipe and place records; P captures a screenshot.
 
-Run index.html using a local HTTP server, or open HACKERPUNK-Citylab-v0.9.html directly in a WebGL 2 browser. Runtime asset paths are relative beneath /punkcity/. Do not add a CNAME.
+Run index.html through a local HTTP server or open HACKERPUNK-Citylab-v0.10.html directly in a WebGL 2 desktop browser. All runtime dependencies are local relative paths beneath /punkcity/. Do not add a CNAME.
 
-## Source map
+## Modules
 
-architecture.js: deterministic palettes, identities, segmented massing recipes and variety audits.
-massing.js: architectural geometry compiler.
-urbanism.js: building hosts, streetside programs, public courts and upper routes.
-scifi.js: hard-surface details, panel/glass shader and shared advertising atlas.
-streets.js: independently owned road ribbons, junctions, rounded curbs and crossing ramps.
-placement.js and neighborhoods.js: clearance-tested small buildings and activity pockets.
-geometry-batch.js and surface-ownership.js: semantic layers, batching and coplanar coverage repair.
-citylab.js: viewer, desktop locomotion, GPU-texture HUD and inspection controls.
-
-Read RELEASE_08.md for the source-reference study and implementation boundaries. CityWorks, Metroforge, Slop New York and Greggman's city code were inspected for planning and geometry lessons; private Metroforge source is not published here.
+architecture.js / massing.js: per-building identities and volume recipes. urbanism.js / districts.js: streets-first block envelopes, courts, stairs and upper routes. streets.js: road geometry and surface materials. inhabited-facades.js: complete bay/story layouts and material response. places.js: activity groups, owned component volumes, approaches and original shared sign/screen textures. place-lighting.js: two shared approximate nighttime light maps. neighborhoods.js and the frontage/street/roof modules: smaller infill. retrofit.js: facade sockets and attachments. geometry-batch.js / surface-ownership.js: batching and coplanar repair.
 
 ## Verification
 
-Run test-variety.mjs, test-infill.mjs, test-streets.mjs, test-neighborhoods.mjs, test-grounding.mjs and test-surfaces.mjs with node --expose-gc; run check_locomotion.mjs with node. python3 build_standalone.py rebuilds the offline viewer. qa-variety.cjs and qa-v08.cjs render the city, inspect architectural families, check isolation and controls, and test offline startup. tools/smoke-live.cjs compares sixteen deployed modules against the commit and checks the public viewer. Workflow results, not this README, establish pass/fail.
+Node tests cover places, architecture variety, infill, retrofit sockets, streets, starter stairs/ramps, grounding and reconstructed final-mesh overlap. python3 build_standalone.py builds the single-file viewer. qa-inhabited.cjs captures matched critique cameras and the new place tour. qa-v10.cjs verifies browser controls, isolation, regeneration and offline startup. tools/smoke-live.cjs checks deployed runtime hashes and renders the actual public viewer. Read workflow outcomes for actual pass/fail evidence.
 
-The rendered scene still uses a constrained family grammar and an orthogonal street layout; repetitive block planning and distant context remain future work. Small-detail collision is simplified, and no VR/Quest performance, full 2 km world, NPCs, traffic, interiors or missions are claimed. Screenshot rendering is not a target-hardware benchmark.
-
-
-0.9 adds facade-mounted galleries, capsule bays, cooling risers, projecting signs and cable bundles. X tours the retrofit layer; Z toggles it for comparison. See RELEASE_09.md and THREEJSPUNK-STUDY.md.
+No full 2 km map, non-grid road planning, VR/Quest performance qualification, traffic simulation or enterable interiors is claimed. Screenshot rendering on SwiftShader is not a target-device benchmark.

@@ -1,0 +1,68 @@
+name: Punkcity architecture variety review
+on:
+  push:
+    branches: [iteration/massing-variety-v08]
+    paths: ['architecture.js', 'massing.js', 'tools/*variety-v08.py', 'qa-variety.cjs', 'test-variety.mjs', '.github/workflows/review-v08.yml']
+permissions:
+  contents: write
+concurrency:
+  group: punkcity-variety-review
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Integrate and preserve exact source
+        run: |
+          if grep -q "const VERSION='0.7.0'" citylab.js; then python3 tools/integrate-variety-v08.py; fi
+          python3 tools/finish-variety-v08.py
+          for f in architecture.js massing.js urbanism.js scifi.js districts.js citylab.js surface-ownership.js; do node --check "$f"; done
+          python3 build_standalone.py
+          git config user.name 'Trent'
+          git config user.email 'trentsterling@gmail.com'
+          git add architecture.js massing.js urbanism.js scifi.js districts.js prop-kit.js citylab.js surface-ownership.js index.html build_standalone.py test-streets.mjs test-neighborhoods.mjs qa-v08.cjs HACKERPUNK-Citylab-v0.8.html
+          if ! git diff --cached --quiet; then git commit -m 'Integrate per-building massing, palettes and stable facade identities'; git push origin HEAD:iteration/massing-variety-v08; fi
+      - name: Verify variety, streets, clearances and actual mesh overlap
+        run: |
+          node --expose-gc test-variety.mjs
+          node --expose-gc test-infill.mjs
+          node --expose-gc test-streets.mjs
+          node --expose-gc test-neighborhoods.mjs
+          node --expose-gc test-grounding.mjs
+          node --expose-gc test-surfaces.mjs
+          node check_locomotion.mjs
+      - name: Install browser verifier
+        run: |
+          mkdir -p /tmp/punkcity-deps
+          cd /tmp/punkcity-deps
+          npm init -y
+          npm install --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Render city, inspect architecture and verify offline viewer
+        run: |
+          mkdir -p /tmp/punkcity-preview
+          ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
+          python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-variety.cjs
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v08.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: punkcity-v08-review
+          path: |
+            *.js
+            *.mjs
+            *.py
+            index.html
+            HACKERPUNK-Citylab-v0.8.html
+            qa-v08/
+            qa-v07/*.json
+            qa-v06/*.json
+            tools/
+            vendor/
+          retention-days: 30

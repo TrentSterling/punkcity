@@ -1,0 +1,22 @@
+const {chromium}=require('playwright');const fs=require('node:fs');
+(async()=>{const out='qa-v10';fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});try{
+ const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1}),errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+ await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>{if(cb.name==='frame'){window.__frame=cb;return 0;}return raf(cb);};});
+ await page.goto((process.env.CITYLAB_BASE||'http://127.0.0.1:8080/punkcity/')+'?capture=1',{waitUntil:'networkidle',timeout:90000});await page.waitForFunction(()=>window.citylab?.ready,null,{timeout:90000});
+ const capture=async(name,fn,arg)=>{await page.evaluate(fn,arg);await page.evaluate(()=>window.__frame(performance.now()));await page.screenshot({path:out+'/'+name+'.png',timeout:90000});console.log(name);if(errors.length)throw Error(errors[0]);};
+ await capture('avenue-matched',()=>{citylab.setHUD(false);citylab.setView(0);});
+ await capture('upper-matched',()=>citylab.setView(2));
+ await capture('market-matched',()=>citylab.setView(7));
+ await capture('overview-matched',()=>citylab.setView(1));
+ for(let i=0;i<5;i++)await capture('place-'+i,i=>citylab.visitPlace(i),i);
+ await capture('tenant-row',()=>{const entries=[...citylab.getCompiled().places.groups].sort((a,b)=>Number(b.type==='upper-room')-Number(a.type==='upper-room')||Number(b.district===4)-Number(a.district===4));citylab.visitPlace(entries.findIndex(p=>p.type==='tenant-row'));});
+ await capture('tenant-night',()=>citylab.lighting(2));
+ await capture('upper-night',()=>citylab.visitPlace(0));
+ await capture('night-matched',()=>citylab.setView(7));
+ await capture('places-isolated',()=>{citylab.lighting(0);citylab.setLayer('places');citylab.setView(1);});
+ await capture('greybox-matched',()=>{citylab.setLayer('all');citylab.setClay(true);citylab.setView(1);});
+ await capture('capsule-matched',()=>{citylab.setClay(false);citylab.visitRetrofit(1);});
+ await page.keyboard.press('KeyY');const first=await page.evaluate(()=>citylab.stats().camera);await page.keyboard.press('Shift+KeyY');const prev=await page.evaluate(()=>citylab.stats().camera);
+ const report={version:await page.evaluate(()=>citylab.version),errors,audit:await page.evaluate(()=>citylab.validate()),stats:await page.evaluate(()=>citylab.stats()),placeTourChangesCamera:JSON.stringify(first)!==JSON.stringify(prev)};
+ fs.writeFileSync(out+'/inhabited-browser.json',JSON.stringify(report,null,2));if(errors.length||!report.audit.ok||!report.stats.places.ok||report.version!=='0.10.0'||!report.placeTourChangesCamera)throw Error('Inhabited viewer failed');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -128,10 +128,10 @@ export function compileStreets(api,data){
   rec.fixtures.push({x,z,block:b.id,major});
  }
  function block(b){
-  const L=b.x-b.w/2-3.2,T=b.z-b.d/2-3.2,X=b.x+b.w/2+3.2,Z=b.z+b.d/2+3.2,W=X-L,D=Z-T;
+  const L=xs[b.i]+wx[b.i]/2,T=zs[b.j]+wz[b.j]/2,X=xs[b.i+1]-wx[b.i+1]/2,Z=zs[b.j+1]-wz[b.j+1]/2,W=X-L,D=Z-T;
   // Existing elevated floor remains exact. No new slab is laid over the old one.
   rectangle(L+R,T+R,X-R,Z-R,H,'streetWalk');collider(L+R,T+R,X-R,Z-R,H);
-  ground.push({x:b.x,z:b.z,w:W,d:D,y:H,kind:'ground'});
+  ground.push({x:(L+X)/2,z:(T+Z)/2,w:W,d:D,y:H,kind:'ground'});
   const sides=[['N',L,T,W,true,b.j>0],['S',L,Z,W,true,b.j+1<6],['W',L,T,D,false,b.i>0],['E',X,T,D,false,b.i+1<6]];
   for(const[side,ox,oz,len,horiz,active]of sides){
    const positive=side==='N'||side==='W',inside=positive?1:-1;

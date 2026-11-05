@@ -20,6 +20,7 @@ jobs:
         run: |
           if grep -q "const VERSION='0.4.0'" citylab.js; then python3 tools/integrate-v05.py; fi
           python3 tools/prepare-v05-tests.py
+          python3 tools/edge-precision-v05.py
           node --check citylab.js
           node --check qa-v05.cjs
       - name: Geometry, reservations, stair walking and repaired-face regression
@@ -45,7 +46,7 @@ jobs:
         run: |
           git config user.name 'Trent'
           git config user.email 'trentsterling@gmail.com'
-          git add citylab.js districts.js urbanism.js scifi.js index.html build_standalone.py test-infill.mjs qa-v05.cjs HACKERPUNK-Citylab-v0.5.html
+          git add citylab.js districts.js urbanism.js scifi.js index.html build_standalone.py test-infill.mjs test-surfaces.mjs surface-ownership.js qa-v05.cjs HACKERPUNK-Citylab-v0.5.html
           git diff --cached --quiet || git commit -m 'Integrate reserved street infill and exposed surface ownership'
           git push origin HEAD:iteration/infill-surfaces-v05
       - uses: actions/upload-artifact@v4

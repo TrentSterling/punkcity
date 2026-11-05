@@ -1,3 +1,4 @@
+import {generateNeighborhoods} from './neighborhoods.js';
 import {planInfill} from './placement.js';
 import {generateFrontage} from './frontage.js';
 import {generateStreetServices} from './street-services.js';
@@ -138,7 +139,7 @@ export function compileDistricts(api,data){
   const buildApi={B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo};
   const urban=compileUrbanism(buildApi,data);
   const infill=planInfill(data,{ground,decks,buildings,urban},B.items||[]);
-  if(B.scope){const kit=createScifiKit(buildApi,data);generateFrontage(buildApi,kit,infill.placements);generateStreetServices(buildApi,kit,infill.placements);generateRoofServices(buildApi,kit,infill.placements);}
+  if(B.scope){const kit=createScifiKit(buildApi,data);generateFrontage(buildApi,kit,infill.placements);generateStreetServices(buildApi,kit,infill.placements);generateRoofServices(buildApi,kit,infill.placements);generateNeighborhoods(buildApi,kit,infill.placements);}
   return {ground,decks,buildings,artifacts,urban,infill};
 }
 

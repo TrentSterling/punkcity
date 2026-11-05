@@ -12,7 +12,7 @@ for(const seed of['HACKERPUNK-02','HP-QA-2','HP-QA-99']){
  const residual=resolveCoplanar(sources);sources.forEach(s=>s.geometry.dispose());sources.length=0;
  const report={seed,repair,residual:{triangles:residual.clippedTriangles,area:residual.removedArea,maxArea:residual.maxOverlapArea,maxWidth:residual.maxOverlapWidth,significantOverlapEvents:residual.significantOverlapEvents,widestExample:residual.widestExample,events:residual.overlapEvents,examples:residual.examples},infill:f.compiled.infill.audit};reports.push(report);console.log(JSON.stringify(report));f.dispose();
 }
-fs.mkdirSync('qa-v05',{recursive:true});fs.writeFileSync('qa-v05/surfaces.json',JSON.stringify(reports,null,2));
+fs.mkdirSync('qa-v06',{recursive:true});fs.writeFileSync('qa-v06/surfaces.json',JSON.stringify(reports,null,2));
 // Verify the actual final Float32 mesh. Require a 0.1 mm maximum support-strip
 // width AND a small aggregate residual area, retaining all raw numerical values.
 assert(reports.every(r=>r.residual.maxWidth<.0001&&r.residual.significantOverlapEvents===0&&r.residual.area<.03),'Residual face overlap exceeds 0.1 mm edge-rounding tolerance');

@@ -1,6 +1,6 @@
 import {propKit} from './prop-kit.js';
 export function generateFrontage(api,sci,placements){
- for(const p of placements.filter(p=>p.layer==='frontage'))api.B.scope('frontage',p.id,()=>{
+ for(const p of placements.filter(p=>p.layer==='frontage'&&!p.newContent))api.B.scope('frontage',p.id,()=>{
   const k=propKit(api,sci,p),{box,casing,cyl,beam,screen,bodyCollider,palette:c}=k;
   if(p.type==='microshop'){
    const w=5.8,d=3.4;box(0,.16,-.25,w,.32,d,'carbon');casing(0,1.9,-1.80,w,3.45,.24,c.armor,0,.30);

@@ -1,3 +1,4 @@
+import {EXTRA_DIMS,planNeighborhoods} from './neighborhoods.js';
 /** Deterministic 3D reservations for independent infill generators. Metres. */
 const CELL=12,EPS=.005;
 export function seeded(text){let a=2166136261;for(const c of String(text)){a^=c.charCodeAt(0);a=Math.imul(a,16777619);}return()=>{a+=0x6d2b79f5;let t=Math.imul(a^a>>>15,1|a);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296;};}
@@ -6,7 +7,7 @@ export class PlacementRegistry{
  constructor(){this.grid=new Map();this.records=[];this.rejected=0;this.reasons={};}
  keys(r,gap=0){const k=[];for(let x=Math.floor((r.x-r.w/2-gap)/CELL);x<=Math.floor((r.x+r.w/2+gap)/CELL);x++)for(let z=Math.floor((r.z-r.d/2-gap)/CELL);z<=Math.floor((r.z+r.d/2+gap)/CELL);z++)k.push(x+','+z);return k;}
  reserve(r){if(![r.x,r.z,r.w,r.d,r.bottom,r.top].every(Number.isFinite)||r.w<=0||r.d<=0||r.top<r.bottom)throw Error('Invalid reservation '+r.id);this.records.push(r);for(const k of this.keys(r)){if(!this.grid.has(k))this.grid.set(k,[]);this.grid.get(k).push(r);}return r;}
- conflict(r,gap=.45){const hits=new Set();for(const k of this.keys(r,gap))for(const b of this.grid.get(k)||[])hits.add(b);return [...hits].find(b=>overlap(r,b,gap));}
+ conflict(r,gap=.45,ignore=[]){const hits=new Set();for(const k of this.keys(r,gap))for(const b of this.grid.get(k)||[])hits.add(b);return [...hits].find(b=>!ignore.includes(b.kind)&&overlap(r,b,gap));}
  place(r){const hit=this.conflict(r);if(hit){this.rejected++;this.reasons[hit.kind||'geometry']=(this.reasons[hit.kind||'geometry']||0)+1;return false;}this.reserve({...r,kind:'infill'});return true;}
 }
 export function planInfill(city,compiled,geometry=[]){
@@ -20,12 +21,17 @@ export function planInfill(city,compiled,geometry=[]){
  }
  for(const e of compiled.urban.entrances){const[x,y,z]=e.position;registry.reserve({id:e.building+'/door',x,z:z+2,w:6,d:5,bottom:y,top:y+3.6,kind:'entrance'});}
  for(const s of compiled.urban.stairs)registry.reserve({id:s.block+'/stairs',...s.footprint,w:s.footprint.w+1,d:s.footprint.d+2,bottom:F,top:s.top+2.5,kind:'stairs'});
- const dims={microshop:[7.2,5.3,4.8],vendor:[5.3,4.4,3.8],repair:[6.3,4.5,4.1],lockers:[3.8,2,2.7],cargo:[4.5,3.4,2.7],utility:[4.5,2.8,3.3],seating:[5.5,3.8,3.8],garden:[4.5,3.5,1.6],cooling:[4.3,3.2,2.9],solar:[4.8,3.1,1.8],roofgarden:[4.8,3.5,2.8]};
+ const dims={microshop:[7.2,5.3,4.8],vendor:[5.3,4.4,3.8],repair:[6.3,4.5,4.1],lockers:[3.8,2,2.7],cargo:[4.5,3.4,2.7],utility:[4.5,2.8,3.3],seating:[5.5,3.8,3.8],garden:[4.5,3.5,1.6],cooling:[4.3,3.2,2.9],solar:[4.8,3.1,1.8],roofgarden:[4.8,3.5,2.8],...EXTRA_DIMS};
  const add=(b,type,x,z,y,rot,layer,host)=>{
-  const[w,d,h]=dims[type],side=Math.abs(Math.sin(rot))>.5,ww=side?d:w,dd=side?w:d;
+  const[rawW,rawD,h]=dims[type],scaleXZ=type==='roofgym'?.70:type==='roofworkshop'?.68:['greenhouse','roofcafe'].includes(type)?.78:1,w=rawW*scaleXZ,d=rawD*scaleXZ,side=Math.abs(Math.sin(rot))>.5,ww=side?d:w,dd=side?w:d;
   const envelope=host||b;if(Math.abs(x-envelope.x)+ww/2>envelope.w/2-1.2||Math.abs(z-envelope.z)+dd/2>envelope.d/2-1.2)return false;
-  const item={id:b.id+'/'+layer+'/'+placements.filter(p=>p.block===b.id).length,block:b.id,district:b.district,type,x,z,y,w:ww,d:dd,localW:w,localD:d,rot,layer,bottom:y+.01,top:y+h,seed:city.seed+':'+b.id+':'+type+':'+x.toFixed(2)+','+z.toFixed(2),host:host?.id||'ground',mount:layer==='rooftops'?'roof':'ground'};
-  if(!registry.place(item))return false;placements.push(item);return true;
+  const item={id:b.id+'/'+layer+'/'+placements.filter(p=>p.block===b.id).length,block:b.id,district:b.district,type,scaleXZ,newContent:!!EXTRA_DIMS[type],x,z,y,w:ww,d:dd,localW:w,localD:d,rot,layer,bottom:y+.01,top:y+h,seed:city.seed+':'+b.id+':'+type+':'+x.toFixed(2)+','+z.toFixed(2),host:host?.id||'ground',mount:layer==='rooftops'?'roof':'ground'};
+  let customer=null;
+  if(item.newContent&&layer==='frontage'){
+   const offset=d/2+.9;customer={id:item.id+'/customers',x:x+Math.sin(rot)*offset,z:z+Math.cos(rot)*offset,w:side?1.6:2.8,d:side?2.8:1.6,bottom:y+.01,top:y+2.2,kind:'customer-access'};
+   if(registry.conflict(customer,.1,['ground-route','upper-route','roof-route','entrance']))return false;
+  }
+  if(!registry.place(item))return false;if(customer){registry.reserve(customer);item.customerAccess=customer;}placements.push(item);return item;
  };
  for(const b of city.blocks){
   const r=seeded(city.seed+':infill:'+b.id),northEdge=b.z-6,south=b.masses.filter(m=>m.role.startsWith('south')),back=south.length?Math.min(...south.map(m=>m.z-m.d/2)):b.z+b.d/2-5;
@@ -41,8 +47,9 @@ export function planInfill(city,compiled,geometry=[]){
     if(add(b,type,m.x+sx*(m.w/2-4.2),m.z+sz*(m.d/2-3.5),m.top,0,'rooftops',m))n++;
    }}
  }
+ planNeighborhoods(city,compiled,add,placements,registry);
  const counts={};for(const p of placements)counts[p.type]=(counts[p.type]||0)+1;
- const audit={ok:true,placements:placements.length,byType:counts,byDistrict:city.districts.map((d,i)=>({district:d.name,count:placements.filter(p=>p.district===i).length})),rejectedCandidates:registry.rejected,reasonCounts:registry.reasons,clearanceMetres:.45};
+ const audit={ok:true,placements:placements.length,newAssemblies:placements.filter(p=>p.newContent).length,uniqueTypes:Object.keys(counts).length,byType:counts,byDistrict:city.districts.map((d,i)=>({district:d.name,count:placements.filter(p=>p.district===i).length})),rejectedCandidates:registry.rejected,reasonCounts:registry.reasons,clearanceMetres:.45};
  const conflicts=[];for(let i=0;i<placements.length;i++)for(let j=i+1;j<placements.length;j++)if(overlap(placements[i],placements[j],.44))conflicts.push([placements[i].id,placements[j].id]);
  audit.conflicts=conflicts;audit.ok=conflicts.length===0;return {placements,audit};
 }

@@ -1,6 +1,6 @@
 import {propKit} from './prop-kit.js';
 export function generateStreetServices(api,sci,placements){
- for(const p of placements.filter(p=>p.layer==='services'))api.B.scope('services',p.id,()=>{
+ for(const p of placements.filter(p=>p.layer==='services'&&!p.newContent))api.B.scope('services',p.id,()=>{
   const{box,casing,cyl,screen,bodyCollider,planter,palette:c}=propKit(api,sci,p);
   if(p.type==='lockers'){
    casing(0,1.225,-.16,3.35,2.45,1.05,c.armor,0,.22);

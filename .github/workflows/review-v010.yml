@@ -2,7 +2,7 @@ name: Punkcity inhabited city review
 on:
   push:
     branches: [iteration/inhabited-city-v010]
-    paths: ['.github/workflows/review-v010.yml', 'places.js', 'inhabited-facades.js', 'place-lighting.js', 'qa-inhabited.cjs', 'tools/integrate-inhabited-v010.py']
+    paths: ['.github/workflows/review-v010.yml', 'places.js', 'inhabited-facades.js', 'place-lighting.js', 'qa-inhabited.cjs', 'tools/refine-places-v010.py']
 permissions:
   contents: write
 concurrency:
@@ -17,15 +17,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Integrate and preserve complete source
+      - name: Apply and preserve visual review corrections
         run: |
-          if grep -q "VERSION='0.9.0'" citylab.js; then python3 tools/integrate-inhabited-v010.py; fi
+          if ! grep -q 'littleScreen=' places.js; then python3 tools/refine-places-v010.py; fi
           python3 build_standalone.py
           git config user.name 'Trent'
           git config user.email 'trentsterling@gmail.com'
-          git add '*.js' index.html build_standalone.py qa-v10.cjs qa-variety.cjs qa-retrofit.cjs HACKERPUNK-Citylab-v0.10.html
+          git add places.js test-places.mjs qa-inhabited.cjs HACKERPUNK-Citylab-v0.10.html
           if ! git diff --cached --quiet; then
-            git commit -m 'Integrate human-scale facades, occupied places and local light pools'
+            git commit -m 'Refine tenant worktops, activity equipment and upper-street destinations'
             git push origin HEAD:iteration/inhabited-city-v010
           fi
       - name: Verify places, routes and final meshes

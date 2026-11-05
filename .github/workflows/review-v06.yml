@@ -16,9 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Integrate exact source revision
+      - name: Integrate reviewed revision
         run: |
           if grep -q "const VERSION='0.5.0'" citylab.js; then python3 tools/integrate-v06.py; fi
+          if ! grep -q 'drawShopLabel' neighborhood-props.js; then python3 tools/refine-v06.py; fi
           node --check citylab.js
           node --check neighborhood-props.js
           node --check placement.js
@@ -47,9 +48,9 @@ jobs:
         run: |
           git config user.name 'Trent'
           git config user.email 'trentsterling@gmail.com'
-          git add citylab.js districts.js urbanism.js scifi.js frontage.js street-services.js roof-services.js index.html build_standalone.py tools/compile-fixture.mjs test-infill.mjs test-surfaces.mjs test-grounding.mjs qa-v06.cjs HACKERPUNK-Citylab-v0.6.html
+          git add citylab.js districts.js urbanism.js scifi.js neighborhood-props.js frontage.js street-services.js roof-services.js index.html build_standalone.py tools/compile-fixture.mjs test-infill.mjs test-surfaces.mjs test-grounding.mjs qa-v06.cjs HACKERPUNK-Citylab-v0.6.html
           if ! git diff --cached --quiet; then
-            git commit -m 'Integrate neighbourhood variety and density presets with verified standalone build'
+            git commit -m 'Batch neighbourhood labels and correct obstructed inspection viewpoints'
             git push origin HEAD:iteration/neighborhoods-v06
           fi
       - uses: actions/upload-artifact@v4

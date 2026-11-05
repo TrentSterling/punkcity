@@ -1,0 +1,13 @@
+const {chromium}=require('playwright');const fs=require('node:fs');
+(async()=>{const out='qa-v07';fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
+try{const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});const errors=[],failed=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('requestfailed',r=>failed.push(r.url()));page.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
+await page.addInitScript(()=>{const native=requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>{if(cb.name==='frame'){window.__frame=cb;return 0;}return native(cb);};});
+await page.goto((process.env.CITYLAB_BASE||'http://127.0.0.1:8080/punkcity/')+'?capture=1',{waitUntil:'networkidle',timeout:90000});await page.waitForFunction(()=>window.citylab?.ready,null,{timeout:60000});
+const captures=[['street-junction',0],['street-local',1],['street-detail',2]];
+for(const[name,n]of captures){await page.evaluate(n=>{citylab.visitStreet(n);citylab.setHUD(false);window.__frame(performance.now());},n);await page.screenshot({path:out+'/'+name+'.png',timeout:60000});if(errors.length)throw Error(errors[0]);}
+await page.evaluate(()=>{citylab.setView(0);window.__frame(performance.now());});await page.screenshot({path:out+'/street-avenue-matched.png'});
+await page.evaluate(()=>{citylab.visitStreet(0);citylab.lighting(2);window.__frame(performance.now());});await page.screenshot({path:out+'/street-night.png'});
+await page.evaluate(()=>{citylab.lighting(0);citylab.visitStreet(2);citylab.setLayer('streets');window.__frame(performance.now());});await page.screenshot({path:out+'/street-isolated.png'});
+await page.evaluate(()=>{citylab.setLayer('all');citylab.visitStreet(0);});const p=await page.evaluate(()=>citylab.camera.position.toArray());for(let n=0;n<3;n++){await page.evaluate(({p,n})=>{citylab.camera.position.set(p[0]+n*.12,p[1],p[2]);window.__frame(performance.now());},{p,n});await page.screenshot({path:out+'/street-motion-'+n+'.png'});}
+const stats=await page.evaluate(()=>citylab.stats()),audit=await page.evaluate(()=>citylab.validate());const report={errors,failed,stats,audit};fs.writeFileSync(out+'/street-browser.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(errors.length||failed.length||!audit.ok||stats.version!=='0.7.0')throw Error('Street browser checks failed');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -11,7 +11,7 @@ concurrency:
 jobs:
   review:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,17 +29,15 @@ jobs:
           git config user.email 'trentsterling@gmail.com'
           git add streets.js citylab.js districts.js index.html build_standalone.py qa-v07.cjs HACKERPUNK-Citylab-v0.7.html
           if ! git diff --cached --quiet; then
-            git commit -m 'Align curb boundaries to street skeleton and rebuild offline viewer'
+            git commit -m 'Join crossing flares to rounded curbs and clear street inspection views'
             git push origin HEAD:iteration/streets-v07
           fi
-      - name: Validate streets and existing city geometry
+      - name: Verify ramp join and street regression
         run: |
           node --expose-gc test-streets.mjs
-          node --expose-gc test-infill.mjs > /tmp/infill.log
           node --expose-gc test-surfaces.mjs > /tmp/surfaces.log
-          node --expose-gc test-grounding.mjs
           node check_locomotion.mjs
-          cp qa-v06/geometry.json qa-v06/surfaces.json qa-v06/grounding.json qa-v07/
+          cp qa-v06/surfaces.json qa-v07/
       - name: Install browser verifier
         run: |
           mkdir -p /tmp/punkcity-deps

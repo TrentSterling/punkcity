@@ -23,14 +23,14 @@ export function planNeighborhoods(city,compiled,add,placements,registry){
   const r=rng(city.seed+':neighborhood:'+b.id),candidates=[];
   for(let z=b.z-b.d/2+4.5;z<b.z+b.d/2-4;z+=4.8)for(let x=b.x-b.w/2+4.5;x<b.x+b.w/2-4;x+=4.8)candidates.push({x:x+(r()-.5)*.45,z:z+(r()-.5)*.45,rank:r()});
   const anchors=placements.filter(p=>p.block===b.id&&p.layer==='frontage');
-  const score=p=>{const d=anchors.length?Math.min(...anchors.map(a=>Math.hypot(a.x-p.x,a.z-p.z))):Math.abs(p.z-b.z-7);return Math.abs(d-7)+p.rank*3;};
+  const score=p=>{const d=anchors.length?Math.min(...anchors.map(a=>Math.hypot(a.x-p.x,a.z-p.z))):Math.abs(p.z-b.z-7);return Math.abs(d-4.5)+p.rank*.8;};
   candidates.sort((a,c)=>score(a)-score(c));
   let placed=0;const majorLimit=[3,3,3,5,7,4][b.district];
   for(const p of candidates){if(placed>=majorLimit)break;const rot=p.x<b.x?Math.PI/2:-Math.PI/2,types=front[b.district];
    for(let k=0;k<types.length;k++){const type=types[(placed+k+b.assembly)%types.length],item=add(b,type,p.x,p.z,.28,rot,'frontage');if(item){item.neighborhood=b.program;anchors.push(item);placed++;break;}}
   }
   // Service pockets cluster around shops/courts; clear pedestrian reservations win.
-  const small=[];for(let z=b.z-b.d/2+2.7;z<b.z+b.d/2-2.5;z+=3.0)for(let x=b.x-b.w/2+2.7;x<b.x+b.w/2-2.5;x+=3.0){const dist=anchors.length?Math.min(...anchors.map(a=>Math.hypot(x-a.x,z-a.z))):Math.abs(z-b.z);small.push({x,z,rank:Math.abs(dist-5.5)+r()*4});}
+  const small=[];for(let z=b.z-b.d/2+2.7;z<b.z+b.d/2-2.5;z+=3.0)for(let x=b.x-b.w/2+2.7;x<b.x+b.w/2-2.5;x+=3.0){const dist=anchors.length?Math.min(...anchors.map(a=>Math.hypot(x-a.x,z-a.z))):Math.abs(z-b.z);small.push({x,z,rank:Math.abs(dist-3.7)+r()*.7});}
   small.sort((a,c)=>a.rank-c.rank);let count=0;const quota=[12,12,12,15,18,14][b.district],used={};
   for(const p of small){if(count>=quota)break;const types=street[b.district];for(let i=0;i<types.length;i++){const type=types[(count+i+b.assembly)%types.length];if((used[type]||0)>=(type==='neonpylon'?1:['hydration','recycling','vendingbay'].includes(type)?3:4))continue;const item=add(b,type,p.x,p.z,.28,p.x<b.x?Math.PI/2:-Math.PI/2,'services');if(item){item.neighborhood=b.program;used[type]=(used[type]||0)+1;count++;break;}}}
   for(const host of b.masses){

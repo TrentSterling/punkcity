@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {resolveCoplanar,patchedArrays} from './surface-ownership.js';
-export const LAYERS=['streets','buildings','traversal','armor','frontage','services','rooftops','signage','retrofit','context'];
+export const LAYERS=['streets','buildings','traversal','armor','frontage','services','rooftops','signage','retrofit','places','context'];
 export class GeometryBatch{
  constructor(root,materials,collider,drawObjects){this.root=root;this.materials=materials;this.collider=collider;this.drawObjects=drawObjects;this.layer='buildings';this.owner='city';this.items=[];this.total=0;this.structures=0;this.duplicatesRemoved=0;this.seen=new Set();this.merge=new Map();this.boxes=[];this.surfaceReport=null;this.unit={box:new THREE.BoxGeometry(1,1,1),cyl:new THREE.CylinderGeometry(1,1,1,10),sphere:new THREE.SphereGeometry(1,8,5)};this.pose=new THREE.Object3D();}
  scope(layer,owner,fn){const old=[this.layer,this.owner];this.layer=layer;this.owner=owner;try{return fn();}finally{[this.layer,this.owner]=old;}}

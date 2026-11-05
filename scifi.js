@@ -1,3 +1,4 @@
+import {inhabitedFacade} from './inhabited-facades.js';
 /** Punkcity 0.4. Original parametric hard-surface architecture and graphics.
  * Hosts retain v0.3 street, stair and public-route reservations. No pack assets.
  * Fine panels are visual dressing; tower bodies/crowns retain structural collision.
@@ -15,54 +16,8 @@ export const PALETTES=[
  {hull:'dark',armor:'armorPlum',edge:'armorBone',glow:'pink',ink:0xa15a86},
  {hull:'ivory',armor:'armorJade',edge:'armorBone',glow:'cyan',ink:0x6c9e72}
 ];
-function panelMaterial(color,type=0){
- const m=new THREE.MeshStandardMaterial({color,roughness:.7,metalness:.12,dithering:true});
- m.onBeforeCompile=s=>{
-  s.uniforms.cyberNight=night;
-  s.vertexShader='attribute float facadeSeed;varying float cSeed;varying vec2 cUV;varying vec3 cP;varying vec3 cN;\n'+s.vertexShader;
-  s.vertexShader=s.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
-cSeed=facadeSeed;cUV=uv;cP=(modelMatrix*vec4(position,1.)).xyz;cN=normalize(mat3(modelMatrix)*normal);`);
-  s.fragmentShader=`uniform float cyberNight;varying float cSeed;varying vec2 cUV;varying vec3 cP;varying vec3 cN;
-float hashC(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
-float cutBox(vec2 p,vec2 size,float cut,vec2 aa){vec2 a=abs(p);float d=max(max(a.x-size.x,a.y-size.y),(a.x+a.y-size.x-size.y+cut)*.707);float fw=max(aa.x,aa.y);return 1.-smoothstep(-fw,fw,d);}
-`+s.fragmentShader;
-  const aperture=type===1?'vec2(.43,.195)':type===2?'vec2(.28,.055)':type===3?'vec2(.325,.24)':'vec2(.32,.20)';
-  s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-vec2 cell=fract(cUV),idx=floor(cUV),aa=max(fwidth(cUV),vec2(.0003));
-float id=floor(cSeed+.5),style=mod(floor(cSeed+.5),5.),identity=hashC(idx+vec2(id,id*.37));
-vec3 hull=diffuseColor.rgb;
-vec2 aperture=${aperture};if(style<.5)aperture=vec2(.42,.16);else if(style<1.5)aperture=vec2(.20,.30);else if(style<2.5)aperture=vec2(.35,.24);else if(style<3.5)aperture=vec2(.40,.08);
-float plate=cutBox(cell-.5,vec2(.482,.475),.065,aa);
-float inset=cutBox(cell-vec2(.5,.62),aperture+vec2(.036,.035),.03,aa);
-float window=cutBox(cell-vec2(.5,.62),aperture,.027,aa);
-float sill=cutBox(cell-vec2(.5,.28),vec2(.39,.047),.025,aa);
-float service=cutBox(cell-vec2(.68,.14),vec2(.17,.035),.01,aa);
-float lip=cutBox(cell-vec2(.5,.945),vec2(.40,.014),0.,aa);
-vec3 N=normalize(cN),T=normalize(cross(vec3(0,1,0),N)),eye=normalize(cameraPosition-cP);
-vec3 ro=vec3((cell-vec2(.5,.62))/aperture,1.);
-vec3 rd=vec3(-dot(eye,T),-eye.y,-max(.18,dot(eye,N)));
-vec3 d=(sign(rd)-ro)/(rd+vec3(.00001));vec3 room=ro+rd*max(0.,min(d.x,min(d.y,d.z)));
-float back=step(.99,abs(room.z));
-vec3 interior=mix(vec3(.027,.055,.065),vec3(.13,.20,.22),back);
-interior*=mix(.43,1.,smoothstep(-1.,1.,room.y));
-float occupied=step(.68,identity),fresnel=pow(1.-max(dot(eye,N),0.),3.);
-vec3 glass=mix(interior,vec3(.21,.39,.44),.18+fresnel*.5);
-glass=mix(glass,vec3(.47,.29,.10),cyberNight*occupied*.6);
-vec3 plateColor=hull*(.92+.08*hashC(vec2(id,7.)));
-plateColor*=mix(.80,1.,smoothstep(0.,5.,cP.y));
-diffuseColor.rgb=mix(hull*.25,plateColor,plate);
-diffuseColor.rgb=mix(diffuseColor.rgb,hull*.40,sill);diffuseColor.rgb=mix(diffuseColor.rgb,hull*1.25,lip*.7);
-diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.022,.035,.041),inset);
-diffuseColor.rgb=mix(diffuseColor.rgb,glass,window);
-${type===2?`float vent=cutBox(cell-vec2(.5,.31),vec2(.35,.15),.04,aa);float slit=1.-smoothstep(.20-aa.y*16.,.20+aa.y*16.,abs(fract(cell.y*16.)-.5));diffuseColor.rgb=mix(diffuseColor.rgb,hull*.26,vent*slit);`:''}
-float distanceFilter=clamp(max(aa.x,aa.y)*2.-.5,0.,1.);
-diffuseColor.rgb=mix(diffuseColor.rgb,mix(hull,vec3(.08,.17,.20),.26),distanceFilter);
-`);
-  s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(.70,.24,window);');
-  s.fragmentShader=s.fragmentShader.replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=mix(.12,.44,window);');
-  s.fragmentShader=s.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=vec3(.72,.40,.10)*window*occupied*cyberNight*.75;totalEmissiveRadiance+=vec3(.05,.25,.29)*service*.2;');
- };m.customProgramCacheKey=()=>`punkcity-armored-panels-v04-${type}`;return m;
-}
+function panelMaterial(color,type=0){return inhabitedFacade(color,type,night);}
+
 function makeAds(){
  const canvas=document.createElement('canvas');canvas.width=2048;canvas.height=1024;const c=canvas.getContext('2d');
  const brands=[['NEURO','UPGRADE YOURSELF','#59ded1','#112f45'],['ORBIT','UPPER CITY TRANSIT','#efb442','#303843'],['CHROMA','AFTER DARK','#e77abb','#452c62'],['SOMA','HOT FOOD / ALL HOURS','#f0ae5b','#843c44'],['HARDLINE','AUGMENT SERVICE','#bde16e','#293f42'],['MESH','STAY CONNECTED','#6dcbf0','#384862'],['ION','CLEAN ENERGY','#c7db92','#426f66'],['VAULT','YOUR MIND. SECURED.','#f2c787','#584b72']];
@@ -139,21 +94,21 @@ export function createScifiKit(api,city){
 
  function podium(m,b){
   const p=paletteFor(m,b),x=m.x,z=m.z,w=m.w,d=m.d;
-  band(x,z,w,d,m.top-.75,.7,m.design?.band===1?p.edge:p.armor,.38);
-  if(m.top>10)band(x,z,w,d,5.5,.3,p.edge,.25);
+  band(x,z,w,d,m.top-.35,.32,m.design?.band===1?p.edge:p.armor,.38);
+  if(m.top>10)band(x,z,w,d,3.65,.18,p.edge,.25);
   for(const side of[-1,1]){
-   const zz=z+side*(d/2+.37),rot=side<0?Math.PI:0,n=Math.max(1,Math.floor((w-3)/7));
+   const zz=z+side*(d/2+.37),rot=side<0?Math.PI:0,n=Math.max(1,Math.floor((w-3)/10));
    for(let i=0;i<n;i++){
     const xx=x-w/2+1.5+(i+.5)*(w-3)/n;
     if((i+b.assembly)%3!==0)continue;
-    const ph=Math.min(4,m.top-7);if(ph<1.8)continue;
-    casing(xx,8.1,zz,(w-3)/n*.62,ph,.6,p.armor,rot,.48);
-    casing(xx,8.1,zz+side*.34,(w-3)/n*.47,ph*.67,.12,'carbon',rot,.30);
-    for(let k=0;k<3;k++)strip(xx,7.5+k*.45,zz+side*.45,(w-3)/n*.32,.11,.12,p.edge,rot);
+    const ph=Math.min(1.6,m.top-7);if(ph<1.0)continue;
+    casing(xx,8.1,zz,Math.min(2.0,(w-3)/n*.42),ph,.42,p.armor,rot,.48);
+    casing(xx,8.1,zz+side*.34,Math.min(1.6,(w-3)/n*.34),ph*.67,.12,'carbon',rot,.30);
+    for(let k=0;k<3;k++)strip(xx,7.75+k*.20,zz+side*.45,Math.min(1.3,(w-3)/n*.30),.07,.12,p.edge,rot);
    }
    for(const sx of[-1,1]){
-    const xx=x+sx*(w/2-1.35);casing(xx,m.top*.5,zz,1.55,m.top-.8,.8,p.edge,rot,.4);
-    casing(xx,2.0,zz+side*.18,2.1,3.4,1,p.armor,rot,.42);
+    const xx=x+sx*(w/2-1.35);casing(xx,m.top*.5,zz,.65,m.top-.8,.42,p.edge,rot,.4);
+    casing(xx,2.0,zz+side*.18,1.0,2.0,.55,p.armor,rot,.42);
     strip(xx,m.top*.62,zz+side*.47,.17,Math.min(3,m.top*.25),.06,p.glow,rot);
    }
   }
@@ -162,7 +117,7 @@ export function createScifiKit(api,city){
   if(m.w>12&&m.d>9&&!b.towers.some(t=>Math.abs(t.x-px)<t.w/2+2.5&&Math.abs(t.z-pz)<t.d/2+2.5))servicePod(px,m.top+.04,pz,4.1,2.6,4.3,p.armor);
   if(m.role.startsWith('north')&&m.w>14){
    const xx=x-w*.27,yy=Math.min(m.top-4,9.5);
-   if(yy>5.5)screen(xx,yy,z+d/2+.95,4.6,5.2,0,(b.district+b.i+b.j)%8);
+   if(yy>5.5)screen(xx,yy,z+d/2+.95,3.0,3.6,0,(b.district+b.i+b.j)%8);
   }
  }
  function shops(m,b){

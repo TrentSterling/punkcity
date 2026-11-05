@@ -121,7 +121,7 @@ export function compileUrbanism(api,city){
     // Coarse architectural division, not a cage of trim around every window.
     const sz=m.z+m.d/2;
     if(b.district!==0)for(const s of[-1,1]){
-      B.box(m.x,m.top-.48,m.z+s*(m.d/2+.13),m.w-1,.32,.22,'steel',false,true);
+      B.box(m.x,m.top-.25,m.z+s*(m.d/2+.13),m.w-1,.16,.22,'steel',false,true);
       for(let i=-m.w/2+2;i<m.w/2-1;i+=6.5)B.box(m.x+i,2.25,m.z+s*(m.d/2+.22),.4,3.9,.55,'concrete',false,true);
     }
     if(m.role.startsWith('south')&&b.district!==0&&b.district!==2)shop(m,b);
@@ -321,10 +321,13 @@ export function compileUrbanism(api,city){
   const r=rands(8211);
   for(let j=-2;j<8;j++)for(let i=-2;i<8;i++){
     if(i>=0&&i<6&&j>=0&&j<6)continue;
-    const x=-216+i*80,z=-195+j*80,xx=x+((i+j)%2)*4;
+    const x=-216+i*80+(i>=6?30:0),z=-195+j*80+(j>=6?25:0),xx=x+((i+j)%2)*4;
     const h=16+Math.floor(r()*6)*4;
-    shell(xx,z,58,51,-.65,h,r()>.6?'facSand':'facBlue',1,1,0,'dark',false);
-    if(r()>.48)shell(xx-12,z-5,25,27,h-.65,20+r()*42,'facDark',1.2,1,0,'dark',false);
+    const n=2+Math.floor(r()*2),width=(58-(n-1)*2)/n;
+    for(let k=0;k<n;k++){const cx=xx-29+width/2+k*(width+2),depth=24+r()*19,hh=9+Math.floor(r()*8)*3.25,mat=['facSand','facBlue','facRust','facIvory'][Math.floor(r()*4)],seed=(i*37+j*71+k*101+10000)*5+k%5;
+      shell(cx,z+5,width,depth,-.65,hh,mat,.6,1,0,'dark',false,seed);
+      if(r()>.50)shell(cx-1,z+2,width*.66,depth*.65,hh-.65,13+r()*34,mat,1,1,0,'steel',false,seed);
+    }
     records.context.push({x:xx,z,h});
   }
   B.layer=previousLayer;

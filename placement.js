@@ -12,6 +12,7 @@ export class PlacementRegistry{
 }
 export function planInfill(city,compiled,geometry=[]){
  const registry=new PlacementRegistry(),placements=[],F=.28;
+ for(const p of compiled.places?.reservations||[])registry.reserve(p);
  for(const s of geometry){if(['streets','context'].includes(s.layer))continue;const g=s.geometry;if(!g.boundingBox)g.computeBoundingBox();const b=g.boundingBox;if(b.isEmpty())continue;registry.reserve({id:'geo/'+s.id,x:(b.min.x+b.max.x)/2,z:(b.min.z+b.max.z)/2,w:Math.max(.005,b.max.x-b.min.x),d:Math.max(.005,b.max.z-b.min.z),bottom:b.min.y,top:b.max.y,kind:'existing'});}
  if(!geometry.length)for(const [i,b]of compiled.buildings.entries())registry.reserve({id:'shell/'+i,x:b.x,z:b.z,w:b.w,d:b.d,bottom:b.base,top:b.base+b.h,kind:'existing'});
  for(const b of city.blocks){

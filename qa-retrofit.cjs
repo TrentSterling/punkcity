@@ -26,5 +26,5 @@ try{
  await page.evaluate(()=>{citylab.setClay(false);citylab.setView(7);citylab.setHUD(true);});await page.keyboard.press('KeyZ');if(await page.evaluate(()=>citylab.config.retrofit))throw Error('Z failed');await page.keyboard.press('KeyX');if(!await page.evaluate(()=>citylab.config.retrofit))throw Error('X did not restore retrofit');await capture('cyber-hud');
  if(plan!==await page.evaluate(()=>JSON.stringify(citylab.getRecipe())))throw Error('Inspection changed city layout');
  report.final=await page.evaluate(()=>citylab.stats());fs.writeFileSync(out+'/retrofit-browser.json',JSON.stringify(report,null,2));
- if(errors.length||failed.length||!report.audit.ok||!report.initial.retrofit.ok||report.initial.version!=='0.9.0')throw Error(JSON.stringify(report));
+ if(errors.length||failed.length||!report.audit.ok||!report.initial.retrofit.ok||report.initial.version!=='0.10.0')throw Error(JSON.stringify(report));
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

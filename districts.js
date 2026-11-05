@@ -1,3 +1,4 @@
+import {planPlaces,compilePlaces,installPlaceMaterials} from './places.js';
 import {auditArchitecture} from './architecture.js';
 import {compileStreets,installStreetMaterials,auditStreets} from './streets.js';
 import {installRetrofitMaterials,planRetrofit,compileRetrofit} from './retrofit.js';
@@ -53,7 +54,7 @@ export function addDistrictMaterials(mats,surface){
   for(const [k,c]of Object.entries(colors))mats[k]=surface(c,k==='water'?.22:.8,k==='water'?.5:.12,.035);
   for(const [name,col,type]of [['facIvory',0xb8b6a7,0],['facSand',0xa18a6c,0],['facRust',0x9b6750,0],['facBlue',0x516c76,0],['facGlass',0x59717b,1],['facDark',0x263c47,2],['facMarket',0xa88570,3]])mats[name]=facadeMaterial(col,type);
   mats.paint=new THREE.MeshStandardMaterial({color:0xd2c7ad,roughness:.95,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
-  installScifiMaterials(mats,surface);installRetrofitMaterials(mats);
+  installScifiMaterials(mats,surface);installPlaceMaterials(mats);installRetrofitMaterials(mats);
   installStreetMaterials(mats);
 }
 export function compileDistricts(api,data){
@@ -69,7 +70,7 @@ export function compileDistricts(api,data){
     const tri=(a,b,c,ua,ub,uc)=>{positions.push(...a,...b,...c);uvs.push(...ua,...ub,...uc);};
     for(let i=0;i<p.length;i++){
       const j=(i+1)%p.length,[ax,az]=p[i],[bx,bz]=p[j],[atx,atz]=top[i],[btx,btz]=top[j];
-      const len=Math.hypot(bx-ax,bz-az),bay=len<2.4?0:Math.max(1,Math.round(len/(mat==='facGlass'?5.8:5.4))),floors=Math.max(1,Math.round(h/7));
+      const len=Math.hypot(bx-ax,bz-az),bay=len<1.5?0:Math.max(1,Math.round(len/(mat==='facGlass'?2.8:2.55))),floors=Math.max(1,Math.round(h/3.25));
       const a=[x+ax,base,z+az],b=[x+bx,base,z+bz],c=[x+btx,base+h,z+btz],d0=[x+atx,base+h,z+atz];
       tri(a,c,b,[0,0],[bay,floors],[bay,0]);tri(a,d0,c,[0,0],[0,floors],[bay,floors]);
     }
@@ -126,11 +127,12 @@ export function compileDistricts(api,data){
   const streets=compileStreets({B,indexCollider,ground},data);
   const buildApi={B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo};
   const urban=compileUrbanism(buildApi,data);
-  const infill=planInfill(data,{ground,decks,buildings,urban},B.items||[]);
+  const places=planPlaces(data,{urban},B.items||[]);if(B.scope)compilePlaces(buildApi,createScifiKit(buildApi,data),places);
+  const infill=planInfill(data,{ground,decks,buildings,urban,places},B.items||[]);
   if(B.scope){const kit=createScifiKit(buildApi,data);generateFrontage(buildApi,kit,infill.placements);generateStreetServices(buildApi,kit,infill.placements);generateRoofServices(buildApi,kit,infill.placements);generateNeighborhoods(buildApi,kit,infill.placements);}
   const retro=planRetrofit(data,{urban,infill},B.items||[]);
   if(B.scope)compileRetrofit(buildApi,createScifiKit(buildApi,data),retro);
-  return {ground,decks,buildings,artifacts,urban,infill,streets,retro};
+  return {ground,decks,buildings,artifacts,urban,infill,streets,retro,places};
 }
 
 export function auditDistricts(data,compiled){
@@ -140,5 +142,5 @@ export function auditDistricts(data,compiled){
   const{x:xs,z:zs,widthsX:wx,widthsZ:wz}=data.groundStreets;let blocked=0;
   for(const b of compiled.buildings){if(b.base>=12||b.x<xs[0]||b.x>xs[6]||b.z<zs[0]||b.z>zs[6])continue;for(let i=0;i<7;i++)if(b.x-b.w/2<xs[i]+wx[i]/2&&b.x+b.w/2>xs[i]-wx[i]/2)blocked++;for(let i=0;i<7;i++)if(b.z-b.d/2<zs[i]+wz[i]/2&&b.z+b.d/2>zs[i]-wz[i]/2)blocked++;}
   if(blocked)errors.push(`${blocked} building/road conflicts`);
-  if(compiled.retro&&!compiled.retro.audit.ok)errors.push('Retrofit reservation conflict');const architecture=auditArchitecture(data);errors.push(...architecture.errors);const streetAudit=auditStreets(compiled.streets);errors.push(...streetAudit.errors);const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,architecture,streets:streetAudit,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
+  if(compiled.places&&!compiled.places.audit.ok)errors.push('Place approach conflict');if(compiled.retro&&!compiled.retro.audit.ok)errors.push('Retrofit reservation conflict');const architecture=auditArchitecture(data);errors.push(...architecture.errors);const streetAudit=auditStreets(compiled.streets);errors.push(...streetAudit.errors);const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,architecture,streets:streetAudit,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
 }

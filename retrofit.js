@@ -19,9 +19,15 @@ export function installRetrofitMaterials(mats){
   g.fillStyle=['#1b272e','#243438','#302c36','#252f2d'][i%4];g.fillRect(0,0,256,512);
   g.fillStyle=fg;g.fillRect(15,16,226,7);g.fillRect(15,489,226,7);
   g.strokeStyle=fg;g.lineWidth=8;g.lineCap='square';
-  g.beginPath();if(i%4===0){g.moveTo(59,135);g.lineTo(197,135);g.quadraticCurveTo(188,230,128,230);g.quadraticCurveTo(68,230,59,135);}
-  else if(i%4===1){g.moveTo(70,92);g.lineTo(186,92);g.lineTo(186,227);g.lineTo(70,227);g.closePath();g.moveTo(83,164);g.lineTo(173,164);}
-  else if(i%4===2){g.moveTo(128,86);g.lineTo(128,225);g.moveTo(63,155);g.lineTo(193,155);}
+  g.beginPath();
+  if(i===2||i===8){g.moveTo(128,86);g.lineTo(128,225);g.moveTo(63,155);g.lineTo(193,155);}
+  else if(i===10){g.roundRect(56,116,144,88,24);g.moveTo(76,158);g.lineTo(112,158);g.moveTo(94,140);g.lineTo(94,177);g.moveTo(161,146);g.lineTo(164,146);g.moveTo(180,173);g.lineTo(183,173);}
+  else if(i===0||i===5||i===9){g.moveTo(59,135);g.lineTo(197,135);g.quadraticCurveTo(188,230,128,230);g.quadraticCurveTo(68,230,59,135);for(let n=0;n<3;n++){g.moveTo(91+n*35,116);g.lineTo(91+n*35,86);}}
+  else if(i===1){g.rect(63,142,130,52);g.moveTo(63,112);g.lineTo(63,224);g.moveTo(193,142);g.lineTo(193,224);g.rect(77,120,38,22);}
+  else if(i===6){g.rect(63,84,130,150);g.moveTo(174,164);g.arc(128,164,46,0,Math.PI*2);}
+  else if(i===11){g.moveTo(60,135);g.lineTo(84,91);g.lineTo(172,91);g.lineTo(196,135);g.lineTo(196,224);g.lineTo(60,224);g.closePath();g.moveTo(60,135);g.lineTo(196,135);}
+  else if(i===13){g.rect(65,111,125,92);g.rect(190,138,13,37);g.moveTo(126,126);g.lineTo(105,162);g.lineTo(143,162);g.lineTo(123,190);}
+  else if(i===4||i===14){g.arc(128,162,45,Math.PI*1.2,Math.PI*1.8);g.moveTo(50,120);g.arc(128,162,85,Math.PI*1.16,Math.PI*1.84);g.moveTo(125,198);g.lineTo(131,198);}
   else{g.moveTo(65,100);g.lineTo(125,160);g.lineTo(65,220);g.moveTo(126,100);g.lineTo(186,160);g.lineTo(126,220);}g.stroke();
   g.textAlign='center';g.fillStyle=fg;g.font='900 33px sans-serif';g.fillText(LABELS[i],128,302,222);
   g.font='700 17px monospace';const words=sub[i].split(' / ');words.forEach((s,j)=>g.fillText(s,128,350+j*24,220));
@@ -123,7 +129,7 @@ export function compileRetrofit(api,kit,plan){
    for(const u of[-w*.35,w*.35])beam([u,-.45,.04],[u,.05,1.92],.18);
    const count=Math.max(1,Math.floor((w-.6)/2.0)),bw=(w-.7)/count;
    for(let i=0;i<count;i++){const u=-w/2+.35+bw*(i+.5);casing(u,1.7,2.10,bw-.13,1.6,.18,'carbon');box(u,1.72,2.22,bw-.3,1.3,.06,'glass');box(u,2.55,2.17,bw-.15,.13,.2,accent);}
-   box(0,3.2,1.1,w-.3,.5,1.3,'steel');for(let i=0;i<3;i++)box(-w*.25+i*w*.25,3.50,1.1,.25,.07,1,'black');
+   box(0,3.14,1.05,w+.10,.12,2.08,'steel');for(const u of[-w/2+.09,w/2-.09])box(u,1.60,2.16,.12,2.85,.12,'steel');box(0,.88,2.24,w-.24,.10,.16,'armorBone');for(let i=0;i<3;i++)box(-w*.25+i*w*.25,3.50,1.1,.25,.07,1,'black');
   }else if(p.type==='cooling-spine'){
    casing(0,h/2,.53,w*.92,h,.92,'dark');
    const levels=Math.max(2,Math.floor(h/2));for(let j=0;j<levels;j++){
@@ -132,6 +138,7 @@ export function compileRetrofit(api,kit,plan){
    }
    for(const u of[-w*.44,w*.44]){beam([u,.1,1.05],[u,h-.1,1.05],.12,'copper',true);for(let y=1;y<h;y+=2)box(u,y,.75,.3,.16,1.05,'steel');}
    box(0,h-.2,1.29,w*.6,.10,.07,glow);
+   for(const yy of[.25,h-.30]){beam([-w*.44,yy,1.05],[w*.44,yy,1.05],.14,'copper',true);beam([0,yy,1.05],[0,yy,.04],.18,'steel',true);}box(0,.30,.45,.55,.42,.80,'steel');
   }else if(p.type==='blade-sign'){
    for(const y of[.6,h-.55])beam([0,y,.04],[0,y,2.7],.18);
    box(0,h/2,1.8,.35,h,2.3,'carbon');box(0,h-.12,1.8,.48,.24,2.5,accent);

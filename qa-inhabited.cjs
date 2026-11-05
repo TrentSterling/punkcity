@@ -10,6 +10,7 @@ const {chromium}=require('playwright');const fs=require('node:fs');
  await capture('overview-matched',()=>citylab.setView(1));
  for(let i=0;i<5;i++)await capture('place-'+i,i=>citylab.visitPlace(i),i);
  await capture('tenant-row',()=>{const entries=[...citylab.getCompiled().places.groups].sort((a,b)=>Number(b.type==='upper-room')-Number(a.type==='upper-room')||Number(b.district===4)-Number(a.district===4));citylab.visitPlace(entries.findIndex(p=>p.type==='tenant-row'));});
+ await capture('kitchen-row',()=>{const entries=[...citylab.getCompiled().places.groups].sort((a,b)=>Number(b.type==='upper-room')-Number(a.type==='upper-room')||Number(b.district===4)-Number(a.district===4));citylab.visitPlace(entries.findIndex(p=>p.type==='tenant-row'&&p.program===0&&p.district===4));});
  await capture('tenant-night',()=>citylab.lighting(2));
  await capture('upper-night',()=>citylab.visitPlace(0));
  await capture('night-matched',()=>citylab.setView(7));

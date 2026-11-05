@@ -1,0 +1,22 @@
+{
+  "version": "0.6.0",
+  "baseCommit": "23ed01a905cf787d05104b2e8156d3139dcb7cf3",
+  "integratedCommit": "3c17d654cffe680691cc804c7e9f1029666fe039",
+  "standaloneFile": "HACKERPUNK-Citylab-v0.6.html",
+  "standaloneSha256": "788d7b3ae0a61335e0a8ab184b29c9ef648dff396e7d6543498bed5245dfed36",
+  "matchesDownloadedCandidate": true,
+  "sourceSha256": {
+    "neighborhoods.js": "65a5f12797091724353b1836cdd9cc6600b29884a910ca01194784e882cc1c5a",
+    "placement.js": "628e119efa0843c1d6d4493445ff84c6c5b0a8cb7b310109bfdf8655790b89ef",
+    "prop-kit.js": "825fb6e8f737cd011f4a06b51da2fa8768818a31272d188ffe3349d1a6446bdb",
+    "frontage.js": "9d40905049d0b28b64e5fb99bc8d605aaedc7e9bb095d394ff8df8e2b503f98b",
+    "street-services.js": "501e7b39da70365205f2b49748b63902dd28d451348567ed7ec5ff266142cba4",
+    "roof-services.js": "55c02d415c7691621fe7695a880f12e63c4f87ca1cb38629282fc830823a2d0e",
+    "districts.js": "f5a2cd7662f1bab58dc261a7644e194d4971ad7ee32e7c1072097c4f7ad506bb",
+    "urbanism.js": "42d3d1ca0266d6e9eb7827c1198b541d10ff6b3e5bd45a6779847cd79340c3b6",
+    "scifi.js": "df1773d9753a2bd7866160aa40fc55a29c3ce5bf50cda32fbcfe884015ffb160",
+    "citylab.js": "7106f62ce82feb8cacc99d02f84126724c4446ddde4b60b09efeda178b6f0fdf",
+    "index.html": "123995090c8daa281e9beb2408b7bb99342938b8febe40b8112d68cb7f8bfddb",
+    "build_standalone.py": "65c2666f95456d707502fd5a0a3747549e59eca889f0aebf9858b3d686d04026"
+  }
+}

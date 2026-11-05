@@ -3,7 +3,7 @@
  * lowered crossing ramps; buildings, parcels and random streams are unchanged.
  */
 import * as THREE from 'three';
-export const STREET_STYLE={curbHeight:.28,cornerRadius:2.4,gutterWidth:.48,crossingOffset:4.2,crossingDepth:2.6,rampWidth:3,rampRun:1.8};
+export const STREET_STYLE={curbHeight:.28,cornerRadius:2.4,gutterWidth:.48,crossingOffset:4.2,crossingDepth:2.6,rampWidth:3,rampRun:1.8,rampFlare:.3};
 const V=(x,y,z)=>new THREE.Vector3(x,y,z), PI=Math.PI;
 const NAMES=['FOUNDRY ROAD','STACK STREET','CIVIC AVENUE','HELIX BOULEVARD','RELAY DRIVE','GARDEN WAY','OUTER CIRCUIT','NORTH SERVICE','ION STREET','CROWN WALK','CENTRAL AVENUE','MARKET STREET','TERRACE ROAD','SOUTH SERVICE'];
 const shaderHead=`varying vec3 sWorld;varying vec2 sUV;varying float sCode;
@@ -32,7 +32,7 @@ export function installStreetMaterials(mats){
   const half=width/2,lanes=width>=14?2:1;
   mats['street'+width]=material(0x4e575c,asphalt+`
 float hw=${half.toFixed(1)},nc=${lanes.toFixed(1)},u=sUV.x,v=sUV.y,L=mod(floor(sCode+.5),1000.);
-// Length is quantized to centimetres via the fractional component, flags to thousands.
+// Local segment length and endpoint flags share the preserved scalar attribute.
 L=mod(sCode,1000.);float flags=floor(sCode/1000.+.00001);
 float crossing=mod(flags,2.),startAhead=mod(floor(flags/2.),2.),endAhead=mod(floor(flags/4.),2.);
 float edge=hw-abs(u),lane=(hw-.82)/nc,d=min(v,L-v);
@@ -120,9 +120,9 @@ export function compileStreets(api,data){
   if(major){
    // Fixed display, not an implemented traffic simulation. Orthogonal approaches differ.
    B.box(x-sx*.28,H+3.65,z-sz*.18,.50,1.3,.45,'dark',false,true);
-   B.box(x-sx*.28,H+4.0,z-sz*.43,.25,.23,.05,sz<0?'streetSignalRed':'black',false,true);
-   B.box(x-sx*.28,H+3.30,z-sz*.43,.25,.23,.05,sz>0?'streetSignal':'black',false,true);
-   B.box(x-sx*.56,H+3.55,z,.05,.30,.27,sz<0?'streetSignal':'streetSignalRed',false,true);
+   B.box(x-sx*.28,H+4.0,z-sz*.43,.25,.23,.05,'streetSignalRed',false,true);
+   B.box(x-sx*.28,H+3.30,z-sz*.43,.25,.23,.05,'black',false,true);
+   B.box(x-sx*.56,H+3.55,z,.05,.30,.27,'streetSignal',false,true);
    label(junctionI,x,H+4.6,z+.24,0);
   }
   rec.fixtures.push({x,z,block:b.id,major});
@@ -137,8 +137,8 @@ export function compileStreets(api,data){
    const positive=side==='N'||side==='W',inside=positive?1:-1;
    const at=(t,d,y)=>horiz?[ox+t,y,oz+inside*d]:[ox+inside*d,y,oz+t];
    const centers=active?[CH,len-CH]:[];
-   const lowers=(t,d)=>{let w=0;for(const c of centers)w=Math.max(w,THREE.MathUtils.clamp((2.1-Math.abs(t-c))/.6,0,1));return H-(H-.012)*w*(1-THREE.MathUtils.clamp(d/1.8,0,1));};
-   const breaks=[R,len-R];for(const c of centers)for(const delta of[-2.1,-1.5,1.5,2.1])if(c+delta>R&&c+delta<len-R)breaks.push(c+delta);
+   const lowers=(t,d)=>{let w=0;for(const c of centers)w=Math.max(w,THREE.MathUtils.clamp((1.8-Math.abs(t-c))/.3,0,1));return H-(H-.012)*w*(1-THREE.MathUtils.clamp(d/1.8,0,1));};
+   const breaks=[R,len-R];for(const c of centers)for(const delta of[-1.8,-1.5,1.5,1.8])if(c+delta>R&&c+delta<len-R)breaks.push(c+delta);
    const ts=[...new Set(breaks)].sort((a,b)=>a-b),depths=[0,.28,.45,.75,1.05,1.35,1.8,R];
    for(let i=0;i<ts.length-1;i++)for(let j=0;j<depths.length-1;j++){
     const a=ts[i],e=ts[i+1],d0=depths[j],d1=depths[j+1],mid=(a+e)/2;

@@ -1,3 +1,4 @@
+import {compileStreets,installStreetMaterials,auditStreets} from './streets.js';
 import {generateNeighborhoods} from './neighborhoods.js';
 import {planInfill} from './placement.js';
 import {generateFrontage} from './frontage.js';
@@ -51,6 +52,7 @@ export function addDistrictMaterials(mats,surface){
   for(const [name,col,type]of [['facIvory',0xb8b6a7,0],['facSand',0xa18a6c,0],['facRust',0x9b6750,0],['facBlue',0x516c76,0],['facGlass',0x59717b,1],['facDark',0x263c47,2],['facMarket',0xa88570,3]])mats[name]=facadeMaterial(col,type);
   mats.paint=new THREE.MeshStandardMaterial({color:0xd2c7ad,roughness:.95,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
   installScifiMaterials(mats,surface);
+  installStreetMaterials(mats);
 }
 export function compileDistricts(api,data){
   const {B,mats,sign,rail,pipe,indexCollider}=api;
@@ -119,28 +121,12 @@ export function compileDistricts(api,data){
     B.box(x,y+3.45,z+2.8,w+.15,.22,1.8,tone,true);B.box(x,y+3.28,z+3.63,w-.35,.08,.06,'warm',false,true);
     sign(text,x,y+4.2,z+2.3,w*.88,.95,0,tone==='oxide'?'#ecb37f':'#93c7cc');
   }
-  function streetGrid(){
-    const {x:xs,z:zs,widthsX:wx,widthsZ:wz}=data.groundStreets,L=xs[0]-wx[0]/2,R=xs[6]+wx[6]/2,N=zs[0]-wz[0]/2,S=zs[6]+wz[6]/2;
-    for(let i=0;i<7;i++)slab(xs[i],(N+S)/2,wx[i],S-N,0,.6,'asphalt','ground');
-    for(let j=0;j<7;j++)for(let i=0;i<6;i++){const a=xs[i]+wx[i]/2,b=xs[i+1]-wx[i+1]/2;slab((a+b)/2,zs[j],b-a,wz[j],0,.6,'asphalt','ground');}
-    for(const b of data.blocks)slab(b.x,b.z,b.w+6.4,b.d+6.4,.28,.55,'pavement','ground');
-    for(const [axis,lines,widths,cross,cwidths] of [['z',xs,wx,zs,wz],['x',zs,wz,xs,wx]])for(let i=0;i<7;i++){
-      const p=lines[i],w=widths[i],alongX=axis==='x';
-      for(let t=(alongX?L:N)+2;t<(alongX?R:S)-2;t+=6){if(cross.some((c,k)=>Math.abs(c-t)<cwidths[k]/2+7))continue;for(const s of[-1,1])flat(alongX?t:p+s*.15,alongX?p+s*.15:t,alongX?2.8:.08,alongX?.08:2.8,.012,'paint');}
-      for(let j=0;j<7;j++)for(const s of[-1,1])for(let a=-w/2+1.3;a<w/2-1;a+=1.25){const t=cross[j]+s*(cwidths[j]/2+2.8);flat(alongX?t:p+a,alongX?p+a:t,alongX?2.5:.52,alongX?.52:2.5,.015,'paint');}
-    }
-    B.box(0,-2,0,1800,1,1800,'asphalt');
-    for(const b of data.blocks){
-      for(const s of[-1,1]){B.box(b.x+s*(b.w/2+2.6),.32,b.z,.12,.06,b.d+5,'steel',false,true);B.box(b.x,.32,b.z+s*(b.d/2+2.6),b.w+4.9,.06,.12,'steel',false,true);}
-      for(const s of[-1,1]){const x=b.x+s*(b.w/2+1.8),z=b.z+b.d/2+1.8;B.box(x,4.6,z,.16,8.6,.16,'steel',false,true);B.box(x,8.8,z-1,.2,.18,2.2,'steel',false,true);B.box(x,8.68,z-1.3,.4,.06,1.3,'warm',false,true);}
-    }
-  }
-  if(B.scope)B.scope('streets','ground',streetGrid);else streetGrid();
+  const streets=compileStreets({B,indexCollider,ground},data);
   const buildApi={B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo};
   const urban=compileUrbanism(buildApi,data);
   const infill=planInfill(data,{ground,decks,buildings,urban},B.items||[]);
   if(B.scope){const kit=createScifiKit(buildApi,data);generateFrontage(buildApi,kit,infill.placements);generateStreetServices(buildApi,kit,infill.placements);generateRoofServices(buildApi,kit,infill.placements);generateNeighborhoods(buildApi,kit,infill.placements);}
-  return {ground,decks,buildings,artifacts,urban,infill};
+  return {ground,decks,buildings,artifacts,urban,infill,streets};
 }
 
 export function auditDistricts(data,compiled){
@@ -150,5 +136,5 @@ export function auditDistricts(data,compiled){
   const{x:xs,z:zs,widthsX:wx,widthsZ:wz}=data.groundStreets;let blocked=0;
   for(const b of compiled.buildings){if(b.base>=12||b.x<xs[0]||b.x>xs[6]||b.z<zs[0]||b.z>zs[6])continue;for(let i=0;i<7;i++)if(b.x-b.w/2<xs[i]+wx[i]/2&&b.x+b.w/2>xs[i]-wx[i]/2)blocked++;for(let i=0;i<7;i++)if(b.z-b.d/2<zs[i]+wz[i]/2&&b.z+b.d/2>zs[i]-wz[i]/2)blocked++;}
   if(blocked)errors.push(`${blocked} building/road conflicts`);
-  const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
+  const streetAudit=auditStreets(compiled.streets);errors.push(...streetAudit.errors);const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,streets:streetAudit,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
 }

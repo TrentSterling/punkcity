@@ -13,7 +13,7 @@ function atlas(){
 }
 export function drawShopLabel(api,p,text,center,w,h){
  const i=names.indexOf(text);if(i<0)throw Error('Unknown shop label: '+text);
- if(typeof document!=='undefined'){if(!material)material=atlas();api.mats.shopLabels=material;}
+ if(typeof document!=='undefined'){if(!material)material=atlas();api.B.materials.shopLabels=material;}
  const g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv,col=i%4,row=Math.floor(i/4);
  for(let n=0;n<uv.count;n++)uv.setXY(n,(col+.008+uv.getX(n)*.984)/4,1-(row+.98-uv.getY(n)*.96)/2);
  g.rotateY(p.rot);g.translate(center.x,center.y,center.z);api.B.geometry(g,'shopLabels',true);

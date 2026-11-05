@@ -1,3 +1,7 @@
+import {planInfill} from './placement.js';
+import {generateFrontage} from './frontage.js';
+import {generateStreetServices} from './street-services.js';
+import {generateRoofServices} from './roof-services.js';
 /** HACKERPUNK 0.3: street reservations -> district parcels -> owned shells -> decks.
  * References studied (not copied): CityWorks shared-court/access contracts;
  * Metroforge urban-fabric.js and surface-ownership architecture;
@@ -5,7 +9,7 @@
  * Metric, seeded recipes remain separate from rendering and movement equipment.
  */
 import * as THREE from 'three';
-import {installScifiMaterials} from './scifi.js';
+import {createScifiKit,installScifiMaterials} from './scifi.js';
 import {planUrbanism, compileUrbanism, auditUrbanism} from './urbanism.js';
 import {facadeMaterial, pavingMaterial} from './facades.js';
 export const DISTRICTS = [
@@ -50,7 +54,7 @@ export function addDistrictMaterials(mats,surface){
 export function compileDistricts(api,data){
   const {B,mats,sign,rail,pipe,indexCollider}=api;
   const ground=[],decks=[],buildings=[],artifacts=[],pi=Math.PI;
-  const addGeo=(g,mat)=>{if(!g.attributes.facadeSeed)g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count),1));if(!g.attributes.uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count*2),2));if(g.index){const old=g;g=g.toNonIndexed();old.dispose();}if(!B.merge.has(mat))B.merge.set(mat,[]);B.merge.get(mat).push(g);};
+  const addGeo=(g,mat)=>{if(B.geometry)B.geometry(g,mat,mat==='paint'||mat==='adScreen');else{if(!g.attributes.facadeSeed)g.setAttribute('facadeSeed',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count),1));if(!g.attributes.uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count*2),2));if(g.index)g=g.toNonIndexed();if(!B.merge.has(mat))B.merge.set(mat,[]);B.merge.get(mat).push(g);}};
   function flat(x,z,w,d,y,mat){const g=new THREE.PlaneGeometry(w,d);g.rotateX(-pi/2);g.translate(x,y,z);addGeo(g,mat);}
   function slab(x,z,w,d,top,thick,mat,kind){B.box(x,top-thick/2,z,w,thick,d,mat,true);if(kind)(kind==='ground'?ground:decks).push({x,z,w,d,y:top,kind});}
   function rectangle(w,d,c=0){const a=w/2,b=d/2;c=Math.min(c,a*.5,b*.5);return c?[[-a+c,-b],[a-c,-b],[a,-b+c],[a,b-c],[a-c,b],[-a+c,b],[-a,b-c],[-a,-b+c]]:[[-a,-b],[a,-b],[a,b],[-a,b]];}
@@ -130,9 +134,12 @@ export function compileDistricts(api,data){
       for(const s of[-1,1]){const x=b.x+s*(b.w/2+1.8),z=b.z+b.d/2+1.8;B.box(x,4.6,z,.16,8.6,.16,'steel',false,true);B.box(x,8.8,z-1,.2,.18,2.2,'steel',false,true);B.box(x,8.68,z-1.3,.4,.06,1.3,'warm',false,true);}
     }
   }
-  streetGrid();
-  const urban=compileUrbanism({B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo},data);
-  return {ground,decks,buildings,artifacts,urban};
+  if(B.scope)B.scope('streets','ground',streetGrid);else streetGrid();
+  const buildApi={B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo};
+  const urban=compileUrbanism(buildApi,data);
+  const infill=planInfill(data,{ground,decks,buildings,urban},B.items||[]);
+  if(B.scope){const kit=createScifiKit(buildApi,data);generateFrontage(buildApi,kit,infill.placements);generateStreetServices(buildApi,kit,infill.placements);generateRoofServices(buildApi,kit,infill.placements);}
+  return {ground,decks,buildings,artifacts,urban,infill};
 }
 
 export function auditDistricts(data,compiled){
@@ -142,5 +149,5 @@ export function auditDistricts(data,compiled){
   const{x:xs,z:zs,widthsX:wx,widthsZ:wz}=data.groundStreets;let blocked=0;
   for(const b of compiled.buildings){if(b.base>=12||b.x<xs[0]||b.x>xs[6]||b.z<zs[0]||b.z>zs[6])continue;for(let i=0;i<7;i++)if(b.x-b.w/2<xs[i]+wx[i]/2&&b.x+b.w/2>xs[i]-wx[i]/2)blocked++;for(let i=0;i<7;i++)if(b.z-b.d/2<zs[i]+wz[i]/2&&b.z+b.d/2>zs[i]-wz[i]/2)blocked++;}
   if(blocked)errors.push(`${blocked} building/road conflicts`);
-  const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);return{...urban,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
+  const urban=auditUrbanism(data,compiled);errors.push(...urban.errors);if(compiled.infill&&!compiled.infill.audit.ok)errors.push('Infill reservation conflict');return{...urban,ok:!errors.length,errors,ownedSurfaces:compiled.ground.length+compiled.decks.length,coplanarOverlapPairs:pairs.length,roadConflicts:blocked,districts:data.districts.map(d=>({name:d.name,blocks:d.blocks.length})),blocks:data.blocks.length,links:data.upperLinks.length};
 }

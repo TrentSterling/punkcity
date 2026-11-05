@@ -7,6 +7,16 @@ const EPS = 1e-7, AREA = 1e-7, PLANE_EPS = 0.00025, TILE = 8;
 const RANK = {streets:0,context:1,buildings:10,traversal:20,armor:30,rooftops:40,services:40,frontage:40,signage:50};
 const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 const area=p=>Math.abs(p.reduce((s,a,i)=>{const b=p[(i+1)%p.length];return s+a[0]*b[1]-a[1]*b[0];},0))*.5;
+// Minimum support-strip width distinguishes rounding slivers from actual faces.
+export function polygonWidth(p){
+ let width=Infinity;
+ for(let i=0;i<p.length;i++){
+  const a=p[i],b=p[(i+1)%p.length],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);if(len<EPS)continue;
+  const distances=p.map(v=>((v[0]-a[0])*(-dy)+(v[1]-a[1])*dx)/len);
+  width=Math.min(width,Math.max(...distances)-Math.min(...distances));
+ }
+ return Number.isFinite(width)?Math.max(0,width):0;
+}
 function bounds(p){return [Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[1]))];}
 const intersects=(a,b)=>Math.min(a[2],b[2])-Math.max(a[0],b[0])>EPS&&Math.min(a[3],b[3])-Math.max(a[1],b[1])>EPS;
 function clean(p){return p.filter((v,i)=>{const b=p[(i+p.length-1)%p.length];return Math.hypot(v[0]-b[0],v[1]-b[1])>EPS;});}
@@ -24,7 +34,7 @@ export function subtractConvex(subject,clip){
   remainder=half(remainder,a,b,true);
  }
  const overlap=remainder.length>=3?area(remainder):0;
- return overlap>AREA?{pieces,overlap}:{pieces:[subject],overlap:0};
+ return overlap>AREA?{pieces,overlap,overlapWidth:polygonWidth(remainder)}:{pieces:[subject],overlap:0,overlapWidth:0};
 }
 class PlaneIndex{
  constructor(){this.groups=new Map();}
@@ -39,7 +49,7 @@ class PlaneIndex{
 }
 /** Sources contain world-space non-indexed Float32 geometry and provenance. */
 export function resolveCoplanar(sources){
- const index=new PlaneIndex(),report={toleranceMetres:PLANE_EPS,inspectedTriangles:0,clippedTriangles:0,removedArea:0,overlapEvents:0,maxOverlapArea:0,byLayer:{},examples:[]};
+ const index=new PlaneIndex(),report={toleranceMetres:PLANE_EPS,inspectedTriangles:0,clippedTriangles:0,removedArea:0,overlapEvents:0,maxOverlapArea:0,maxOverlapWidth:0,significantOverlapEvents:0,widestExample:null,byLayer:{},examples:[]};
  const ordered=[...sources].sort((a,b)=>(RANK[b.layer]??10)-(RANK[a.layer]??10)||b.id-a.id);
  for(const src of ordered){
   const g=src.geometry,pa=g.attributes.position,na=g.attributes.normal,uv=g.attributes.uv,seed=g.attributes.facadeSeed;
@@ -54,7 +64,7 @@ export function resolveCoplanar(sources){
    const flipped=cross(poly[0],poly[1],poly[2])<0;if(flipped)poly.reverse();
    const candidates=index.query(group,bounds(poly));let fragments=[poly],removed=0;
    for(const other of candidates){
-    const next=[];for(const f of fragments){if(!intersects(bounds(f),other.bounds)){next.push(f);continue;}const result=subtractConvex(f,other.poly);removed+=result.overlap;next.push(...result.pieces);if(result.overlap>AREA){report.overlapEvents++;report.maxOverlapArea=Math.max(report.maxOverlapArea,result.overlap);if(report.examples.length<12)report.examples.push({owner:src.owner,layer:src.layer,triangle:t/3,area:result.overlap});}}
+    const next=[];for(const f of fragments){if(!intersects(bounds(f),other.bounds)){next.push(f);continue;}const result=subtractConvex(f,other.poly);removed+=result.overlap;next.push(...result.pieces);if(result.overlap>AREA){report.overlapEvents++;report.maxOverlapArea=Math.max(report.maxOverlapArea,result.overlap);const width=result.overlapWidth/Math.abs(n[axis]);if(width>report.maxOverlapWidth){report.maxOverlapWidth=width;report.widestExample={owner:src.owner,layer:src.layer,triangle:t/3,area:result.overlap,width};}if(width>0.0001)report.significantOverlapEvents++;if(report.examples.length<12)report.examples.push({owner:src.owner,layer:src.layer,triangle:t/3,area:result.overlap});}}
     fragments=next;if(!fragments.length)break;
    }
    if(removed>AREA){src.patches.set(t,{fragments,flipped});report.clippedTriangles++;report.removedArea+=removed/Math.abs(n[axis]);report.byLayer[src.layer]=(report.byLayer[src.layer]||0)+1;}

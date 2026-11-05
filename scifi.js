@@ -82,19 +82,19 @@ export function installScifiMaterials(mats,surface){
 }
 export function createScifiKit(api,city){
  const {B,shell,flat,plant,pipe,rail,addGeo,indexCollider}=api;
- const records={revision:'0.4.0',crowns:[],panels:0,screens:0,kiosks:0,cableRuns:0};
+ const records={revision:'0.5.0',crowns:[],panels:0,screens:0,kiosks:0,cableRuns:0};
  const pose=(x,y,z,rot=0)=>new THREE.Matrix4().compose(V(x,y,z),new THREE.Quaternion().setFromAxisAngle(V(0,1,0),rot),V(1,1,1));
  // Cut-corner face with real depth, not a nearly coplanar decal on another face.
  function casing(x,y,z,w,h,d,mat,rot=0,cut=.25){
   cut=Math.min(cut,w*.18,h*.18);const a=w/2,b=h/2,shape=new THREE.Shape();
   shape.moveTo(-a+cut,-b);shape.lineTo(a-cut,-b);shape.lineTo(a,-b+cut);shape.lineTo(a,b-cut);shape.lineTo(a-cut,b);shape.lineTo(-a+cut,b);shape.lineTo(-a,b-cut);shape.lineTo(-a,-b+cut);shape.closePath();
-  const g=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:false,steps:1,curveSegments:1});g.translate(0,0,-d/2);g.applyMatrix4(pose(x,y,z,rot));addGeo(g,mat);records.panels++;
+  const g=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:false,steps:1,curveSegments:1});g.translate(0,0,-d/2);g.applyMatrix4(pose(x,y,z,rot));if(B.scope&&B.layer==='buildings')B.scope('armor',B.owner+'/casing',()=>addGeo(g,mat));else addGeo(g,mat);records.panels++;
  }
  function screen(x,y,z,w,h,rot,kind){
   casing(x,y,z,w+.55,h+.55,.55,'carbon',rot,.32);
   const g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv,col=kind%4,row=Math.floor(kind/4);
   for(let i=0;i<uv.count;i++)uv.setXY(i,(col+.02+uv.getX(i)*.96)/4,1-(row+.98-uv.getY(i)*.96)/2);
-  g.translate(0,0,.31);g.applyMatrix4(pose(x,y,z,rot));addGeo(g,'adScreen');records.screens++;
+  g.translate(0,0,.34);g.applyMatrix4(pose(x,y,z,rot));addGeo(g,'adScreen');records.screens++;
  }
  function strip(x,y,z,w,h,d,mat,rot=0){B.box(x,y,z,w,h,d,mat,false,true,rot);}
  function band(x,z,w,d,y,h,mat,depth=.42){
@@ -108,11 +108,12 @@ export function createScifiKit(api,city){
   p=pt(0,0,.39);B.instance('cyl',p.x,p.y,p.z,size*.11,.15,size*.11,'steel',true,0,axis);
   for(let i=0;i<5;i++){const a=i*Math.PI*.4;B.beam(pt(Math.cos(a)*size*.12,Math.sin(a)*size*.12,.43),pt(Math.cos(a+.4)*size*.29,Math.sin(a+.4)*size*.29,.43),size*.075,'armorSilver',true);}
  }
- function servicePod(x,y,z,w,h,d,mat){
+ function servicePodBody(x,y,z,w,h,d,mat){
   shell(x,z,w,d,y,h,mat,Math.min(.65,w*.16,d*.16),1,0,'steel');
   band(x,z,w,d,y+h*.25,.28,'carbon',.25);band(x,z,w,d,y+h*.81,.34,'armorBone',.3);
   const n=Math.max(1,Math.floor(w/2.5));for(let i=0;i<n;i++)fan(x-w*.36+(i+.5)*w*.72/n,y+h*.54,z+d/2+.28,Math.min(1.65,h*.5));
  }
+ function servicePod(...args){if(B.scope)return B.scope('rooftops',B.owner+'/service-pod',()=>servicePodBody(...args));return servicePodBody(...args);}
  function crown(t,b,x,z,w,d,base,top){
   const p=PALETTES[b.district],h=top-base,kind=b.assembly%3;
   if(kind===0){
@@ -301,5 +302,5 @@ export function createScifiKit(api,city){
    }
   }
  }
- return {tower,podium,shops,extras,records};
+ return {tower,podium,shops,extras,records,casing,screen,fan,servicePod,band};
 }

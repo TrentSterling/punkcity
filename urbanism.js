@@ -7,7 +7,7 @@ import {createScifiKit} from './scifi.js';
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const FLOOR=.28,LEVEL=16,PATH=7,PLAZA=12;
 const round=n=>Math.round(n*1000)/1000;
-export const URBAN_REVISION='0.4.0';
+export const URBAN_REVISION='0.5.0';
 
 export function planUrbanism(city){
   city.version=URBAN_REVISION;city.upperLinks=[];
@@ -88,6 +88,7 @@ export function planUrbanism(city){
 export function compileUrbanism(api,city){
   const {B,shell,flat,slab,roofkit,plant,tree,sign,rail,pipe,indexCollider,addGeo}=api;
   const sci=createScifiKit(api,city);
+  const run=(layer,owner,fn)=>B.scope?B.scope(layer,owner,fn):fn();
   const records={entrances:[],stairs:[],supports:[],access:[],context:[],roofs:[]};
   const rands=s=>{let a=s>>>0;return()=>{a+=0x6d2b79f5;let t=Math.imul(a^a>>>15,1|a);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296;};};
   const edge=(x1,z1,x2,z2,y)=>{if(Math.hypot(x2-x1,z2-z1)>.15)rail(x1,z1,x2,z2,y);};
@@ -113,7 +114,7 @@ export function compileUrbanism(api,city){
     sign(text,x,y+4.65,z+.3,w+1,1,0,upper?'#91b9ba':'#c3b28e');
     records.entrances.push({building:m.id,position:[x,y,z+.5],level:upper?'upper':'ground'});
   }
-  function shop(m,b){sci.shops(m,b);}
+  function shop(m,b){run('frontage',m.id+'/shops',()=>sci.shops(m,b));}
   function podium(m,b){
     shell(m.x,m.z,m.w,m.d,FLOOR,m.top-FLOOR,m.mat,.65,1,0,m.top===LEVEL?'deck':'dark');
     // Coarse architectural division, not a cage of trim around every window.
@@ -305,11 +306,15 @@ export function compileUrbanism(api,city){
   }
 
   for(const b of city.blocks){
-    const r=rands(b.seed);b.masses.forEach(m=>{podium(m,b);sci.podium(m,b);});b.towers.forEach(t=>tower(t,b,r));
-    if(b.district===0)industry(b,r);
-    platform(b);roofAccess(b);switchback(b);court(b,r);sci.extras(b);
+    const r=rands(b.seed);
+    b.masses.forEach(m=>{run('buildings',m.id,()=>podium(m,b));run('armor',m.id+'/armor',()=>sci.podium(m,b));});
+    b.towers.forEach(t=>run('buildings',t.id,()=>tower(t,b,r)));
+    if(b.district===0)run('buildings',b.id+'/industry',()=>industry(b,r));
+    run('traversal',b.id+'/routes',()=>{platform(b);roofAccess(b);switchback(b);});
+    run('services',b.id+'/court',()=>court(b,r));run('services',b.id+'/legacy-services',()=>sci.extras(b));
   }
-  city.upperLinks.forEach(bridge);
+  city.upperLinks.forEach(l=>run('traversal',l.a+'>'+l.b,()=>bridge(l)));
+  const previousLayer=B.layer;B.layer='context';
 
   // Ordered urban context replaces the fence of isolated random skyscrapers.
   const r=rands(8211);
@@ -321,6 +326,7 @@ export function compileUrbanism(api,city){
     if(r()>.48)shell(xx-12,z-5,25,27,h-.65,20+r()*42,'facDark',1.2,1,0,'dark',false);
     records.context.push({x:xx,z,h});
   }
+  B.layer=previousLayer;
   records.scifi=sci.records;
   return records;
 }

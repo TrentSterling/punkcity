@@ -1,0 +1,69 @@
+name: Punkcity neighbourhood expansion review
+on:
+  push:
+    branches: [iteration/neighborhoods-v06]
+permissions:
+  contents: write
+concurrency:
+  group: punkcity-neighborhood-review
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Integrate exact source revision
+        run: |
+          if grep -q "const VERSION='0.5.0'" citylab.js; then python3 tools/integrate-v06.py; fi
+          node --check citylab.js
+          node --check neighborhood-props.js
+          node --check placement.js
+      - name: Geometry, density, stair traversal and final surface checks
+        run: |
+          node --expose-gc test-infill.mjs
+          node --expose-gc test-neighborhoods.mjs
+          node --expose-gc test-grounding.mjs
+          node --expose-gc test-surfaces.mjs
+          node check_locomotion.mjs
+          python3 build_standalone.py
+      - name: Install browser verifier
+        run: |
+          mkdir -p /tmp/punkcity-deps
+          cd /tmp/punkcity-deps
+          npm init -y
+          npm install --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Inspect neighbourhoods and offline build
+        run: |
+          mkdir -p /tmp/punkcity-preview
+          ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
+          python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v06.cjs
+      - name: Save verified integration to review branch
+        run: |
+          git config user.name 'Trent'
+          git config user.email 'trentsterling@gmail.com'
+          git add citylab.js districts.js urbanism.js scifi.js frontage.js street-services.js roof-services.js index.html build_standalone.py tools/compile-fixture.mjs test-infill.mjs test-surfaces.mjs test-grounding.mjs qa-v06.cjs HACKERPUNK-Citylab-v0.6.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Integrate neighbourhood variety and density presets with verified standalone build'
+            git push origin HEAD:iteration/neighborhoods-v06
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: punkcity-v06-review
+          path: |
+            *.js
+            *.cjs
+            *.mjs
+            *.py
+            index.html
+            HACKERPUNK-Citylab-v0.6.html
+            qa-v06/
+            tools/
+            vendor/
+          retention-days: 30

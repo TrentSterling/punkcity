@@ -1,3 +1,4 @@
+import {drawShopLabel} from './shop-labels.js';
 /** Original neighbourhood assemblies; consumes reservations, never changes city topology.
  * All geometry goes through the same owner-tagged coplanar compiler as the host city.
  */
@@ -12,7 +13,7 @@ export function generateNeighborhoodProp(api,sci,p){
  const foot=(x,z,w,d)=>box(x,.08,z,w,.16,d,'carbon');
  const wheel=(x,y,z,r=.2)=>{const a=point(x,y-r*(1-Math.cos(Math.PI/10)),z);const axis=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(Math.sin(p.rot),0,Math.cos(p.rot)));B.instance('cyl',a.x,a.y,a.z,r,.12,r,'carbon',true,0,axis);};
  const orb=(x,y,z,r,mat='plant')=>{const a=point(x,y,z);B.instance('sphere',a.x,a.y,a.z,r,r*.8,r,mat,true);};
- const letters=(text,x,y,z,w,h)=>{const a=point(x,y,z);api.sign(text,a.x,a.y,a.z,w,h,p.rot,'#e4cda1');};
+ const letters=(text,x,y,z,w,h)=>drawShopLabel(api,p,text,point(x,y,z),w,h);
  const counter=(x,z,w=3,d=1.15)=>{foot(x,z,w-.25,d-.15);casing(x,.80,z,w,1.28,d,c.armor,0,.18);box(x,1.49,z+.06,w+.18,.12,d+.18,c.edge);bodyCollider(x,.77,z,w,1.54,d);};
  const stool=(x,z)=>{cyl(x,.07,z,.29,.14,'steel');cyl(x,.43,z,.06,.58,'steel');cyl(x,.78,z,.32,.13,accent);};
  const canopy=(w,d,h=3.25)=>{for(const sx of[-1,1])box(sx*(w/2-.2),h/2,-d/2+.2,.12,h,.12,'steel');casing(0,h,0,w,.24,d,c.armor,0,.13);box(0,h-.17,d/2-.18,w-.4,.08,.09,c.glow);};

@@ -62,7 +62,7 @@ function lighting(index){config.lighting=(index+3)%3;const t=config.lighting;set
 const player={mode:'fly',feet:v3(),velocity:v3(),gear:0,grounded:false,fuel:4,boots:false,grapple:null,climbing:false};let yaw=0,pitch=0,lastClimb=null,keys=new Set(),mouseDown=false,viewIndex=0;
 const views=[
 {name:'Civic avenue',p:[-6,8,63],look:[29,21,-33]},
-{name:'District overview',p:[210,170,255],look:[0,20,0]},
+{name:'District overview',p:[318,255,370],look:[0,25,0]},
 {name:'Upper market street',p:[-13,18.1,110],look:[-60,20,110]},
 {name:'Foundry loading court',p:[-172,5,-145],look:[-207,10,-184]},
 {name:'Corporate Crown',p:[12,32,8],look:[42,59,-41]},
@@ -83,7 +83,12 @@ function visitInfill(which=infillViewIndex+1){
  const entries=[...unique,...rest];if(!entries.length)return null;
  let p;if(typeof which==='string'){p=compiled.infill.placements.find(p=>p.type===which);if(!p)return null;}else{infillViewIndex=((which%entries.length)+entries.length)%entries.length;p=entries[infillViewIndex];}
  const c=Math.cos(p.rot),s=Math.sin(p.rot);setLayer('all');config.infill=true;config.clay=false;config.detail=true;applyAppearance();player.mode='fly';player.grapple=null;
- camera.position.set(p.x+c*4.7+s*9,p.y+4.7,p.z-s*4.7+c*9);camera.lookAt(p.x,p.y+1.7,p.z);yaw=camera.rotation.y;pitch=camera.rotation.x;
+ const local=(x,y,z)=>v3(p.x+c*x+s*z,p.y+y,p.z-s*x+c*z);
+ const target=local(0,1.65,p.localD*.30),front=p.localD/2;
+ const choices=[[3.5,4.5,front+6],[-3.5,4.5,front+6],[0,3.3,front+5],[2.2,3.4,front+4],[-2.2,3.4,front+4],[0,6.2,front+7],[4,7.2,front+8],[-4,7.2,front+8],[0,8.5,front+10]];
+ scene.updateMatrixWorld(true);const visible=drawObjects.filter(o=>o.visible);let eye=null;
+ for(const a of choices){const candidate=local(...a);if(collision.some(box=>box.containsPoint(candidate)))continue;const delta=target.clone().sub(candidate),distance=delta.length();const ray=new THREE.Raycaster(candidate,delta.normalize(),.15,Math.max(.2,distance-1.2));if(!ray.intersectObjects(visible,false).length){eye=candidate;break;}}
+ camera.position.copy(eye||local(0,Math.max(8,p.top-p.y+2),front+10));camera.lookAt(target);yaw=camera.rotation.y;pitch=camera.rotation.x;
  infillViewName=DISTRICTS[p.district].short+' / '+(INFILL_CATALOG[p.type]?.name||p.type);hudDirty=true;return p;
 }
 

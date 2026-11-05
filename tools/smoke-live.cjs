@@ -1,9 +1,9 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');const crypto=require('node:crypto');
-const files=['citylab.js','districts.js','urbanism.js','facades.js','scifi.js','geometry-batch.js','surface-ownership.js','placement.js','prop-kit.js','frontage.js','street-services.js','roof-services.js','neighborhoods.js','streets.js','architecture.js','massing.js'];
+const files=['retrofit.js','citylab.js','districts.js','urbanism.js','facades.js','scifi.js','geometry-batch.js','surface-ownership.js','placement.js','prop-kit.js','frontage.js','street-services.js','roof-services.js','neighborhoods.js','streets.js','architecture.js','massing.js'];
 const digest=text=>{const b=Buffer.from(text);return crypto.createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');};
 (async()=>{
- const base=process.env.LIVE_BASE||'https://tront.xyz/punkcity/',out='qa-v08';
+ const base=process.env.LIVE_BASE||'https://tront.xyz/punkcity/',out='qa-v09';
  const expected=Object.fromEntries(files.map(name=>[name,digest(fs.readFileSync(name))]));
  const version=/const VERSION='([^']+)'/.exec(fs.readFileSync('citylab.js','utf8'))?.[1];if(!version)throw Error('No source version');
  let ready=false;

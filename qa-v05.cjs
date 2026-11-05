@@ -29,12 +29,16 @@ const timer=setTimeout(()=>{console.error('Bounded QA timeout');process.exit(2);
    report.isolation.push({layer,visible});if(visible.some(x=>x!==layer))throw Error('Generator isolation leak: '+layer);
    await page.screenshot({path:out+'/isolate-'+layer+'.png',timeout:45000});
   }
-  await page.evaluate(()=>citylab.setLayer('all'));
+  await page.evaluate(()=>{citylab.setLayer('all');citylab.lighting(0);});
   if(planBefore!==await page.evaluate(()=>JSON.stringify(citylab.getRecipe())))throw Error('Layer selection changed recipe');
-  const focus=await page.evaluate(()=>citylab.getCompiled().infill.placements.find(p=>p.type==='microshop'&&p.district===4)||citylab.getCompiled().infill.placements.find(p=>p.type==='vendor'));
-  if(!focus)throw Error('No frontage generated');
-  await page.evaluate(p=>{citylab.setCamera([p.x+13,9,p.z+18],[p.x,2,p.z]);window.__frame(performance.now());},focus);
-  await page.screenshot({path:out+'/infill-close.png',timeout:45000});
+  report.closeViews=[];
+  for(let n=0;n<3;n++){
+   const place=await page.evaluate(n=>{const p=citylab.visitInfill(n);window.__frame(performance.now());return p;},n);
+   if(!place)throw Error('No frontage tour target');report.closeViews.push(place);
+   await page.screenshot({path:out+'/infill-close-'+n+'.png',timeout:45000});
+  }
+  await page.keyboard.press('KeyU');if(await page.evaluate(()=>citylab.config.infill))throw Error('U toggle failed');
+  await page.keyboard.press('KeyK');if(!await page.evaluate(()=>citylab.config.infill))throw Error('K tour did not restore infill');
   report.regeneration=[];for(const seed of['HP-QA-1','HP-QA-2','HP-QA-99']){await page.evaluate(s=>{citylab.regenerate(s);window.__frame(performance.now());},seed);report.regeneration.push(await page.evaluate(()=>({audit:citylab.validate(),stats:citylab.stats()})));}
   await page.keyboard.press('KeyB');await page.keyboard.press('Digit3');report.equipment=await page.evaluate(()=>citylab.player.gear);
   await page.evaluate(()=>{citylab.regenerate('HACKERPUNK-02');citylab.lighting(0);citylab.setView(2);});const pos=await page.evaluate(()=>citylab.camera.position.toArray());

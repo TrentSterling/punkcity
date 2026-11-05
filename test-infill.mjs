@@ -4,7 +4,11 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import * as THREE from './vendor/build/three.module.js';
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
 import {compileFixture} from './tools/compile-fixture.mjs';
-function compile(seed,height=1){globalThis.gc?.();const f=compileFixture(seed,height);const {city,compiled,audit,boxes}=f;f.dispose();return{city,compiled,audit,boxes};}
+function compile(seed,height=1){globalThis.gc?.();const f=compileFixture(seed,height);const {city,compiled,audit,boxes}=f;const byId=new Map(compiled.infill.placements.map(p=>[p.id,p]));const escapes=[];
+for(const item of f.B.items){const p=byId.get(item.owner);if(!p)continue;item.geometry.computeBoundingBox();const b=item.geometry.boundingBox;
+ const excess=Math.max(p.x-p.w/2-b.min.x,b.max.x-p.x-p.w/2,p.z-p.d/2-b.min.z,b.max.z-p.z-p.d/2,p.y-b.min.y,b.max.y-p.top);
+ if(excess>.01)escapes.push({id:p.id,excess});}
+audit.infillCount=byId.size;audit.infillEnvelopeEscapes=escapes;audit.ok=audit.ok&&!escapes.length;f.dispose();return{city,compiled,audit,boxes};}
 const results=[];
 for(const height of[.55,1,1.6])for(const seed of['HACKERPUNK-02','HP-QA-1','HP-QA-2','HP-QA-3','HP-QA-99']){
  const {city,compiled,audit}=compile(seed,height),repeat=compile(seed,height);

@@ -11,15 +11,16 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify architecture, streets, surface ownership and starter access
+      - name: Verify retrofit, architecture, streets and surface ownership
         run: |
           for f in *.js; do node --check "$f"; done
+          node --expose-gc test-retrofit.mjs
           node --expose-gc test-variety.mjs
           node --expose-gc test-infill.mjs
           node --expose-gc test-streets.mjs
@@ -28,7 +29,7 @@ jobs:
           node --expose-gc test-surfaces.mjs
           node check_locomotion.mjs
           python3 build_standalone.py
-          git diff --exit-code -- HACKERPUNK-Citylab-v0.8.html
+          git diff --exit-code -- HACKERPUNK-Citylab-v0.9.html
       - name: Install browser test dependency
         run: |
           mkdir -p /tmp/punkcity-deps
@@ -36,21 +37,23 @@ jobs:
           npm init -y
           npm install --ignore-scripts playwright@1.56.1
           npx playwright install --with-deps chromium
-      - name: Test architecture views, isolation and offline build
+      - name: Test retrofit comparisons, architecture, isolation and offline build
         run: |
           mkdir -p /tmp/punkcity-preview
           ln -s "$GITHUB_WORKSPACE" /tmp/punkcity-preview/punkcity
           python3 -m http.server 8080 --directory /tmp/punkcity-preview >/tmp/punkcity-http.log 2>&1 &
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-retrofit.cjs
           NODE_PATH=/tmp/punkcity-deps/node_modules node qa-variety.cjs
-          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v08.cjs
-      - name: Verify deployed Pages URL and source hashes
+          NODE_PATH=/tmp/punkcity-deps/node_modules node qa-v09.cjs
+      - name: Verify deployed Pages source hashes and retrofit controls
         run: NODE_PATH=/tmp/punkcity-deps/node_modules node tools/smoke-live.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: punkcity-verification
           path: |
-            qa-v08/
+            qa-v09/
+            qa-v08/*.json
             qa-v07/*.json
             qa-v06/*.json
           retention-days: 30

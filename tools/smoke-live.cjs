@@ -24,9 +24,12 @@ const digest=text=>{const b=Buffer.from(text);return crypto.createHash('sha1').u
   const response=await page.goto(base+'?capture=1&release='+version,{waitUntil:'networkidle',timeout:60000});await page.waitForFunction(()=>window.citylab?.ready,null,{timeout:60000});
   await page.evaluate(()=>window.__testFrame(performance.now()));fs.mkdirSync(out,{recursive:true});await page.screenshot({path:out+'/live.png',timeout:60000});
   await page.evaluate(()=>{citylab.visitBuilding(0);window.__testFrame(performance.now());});await page.screenshot({path:out+'/live-building.png',timeout:60000});
+  await page.keyboard.press('KeyZ');if(await page.evaluate(()=>citylab.config.retrofit))throw Error('Live retrofit toggle failed');
+  await page.keyboard.press('KeyX');if(!await page.evaluate(()=>citylab.config.retrofit))throw Error('Live retrofit tour failed');
+  await page.evaluate(()=>window.__testFrame(performance.now()));await page.screenshot({path:out+'/live-retrofit.png',timeout:60000});
   const stats=await page.evaluate(()=>citylab.stats()),audit=await page.evaluate(()=>citylab.validate()),outside=requests.filter(u=>!u.startsWith(base));
-  const report={url:page.url(),status:response.status(),coreHashesVerified:true,verifiedFiles:files,errors,failed,outsideAssetRequests:outside,requestCount:requests.length,stats,audit};
+  const report={url:page.url(),status:response.status(),coreHashesVerified:true,verifiedFiles:files,errors,failed,outsideAssetRequests:outside,requestCount:requests.length,retrofitControlsVerified:true,stats,audit};
   fs.writeFileSync(out+'/live-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
-  if(response.status()!==200||errors.length||failed.length||outside.length||stats.version!==version||stats.districts!==6||stats.blocks!==36||!audit.ok||audit.groundStairs!==6||!stats.infill?.ok||stats.infill.placements<600||!stats.surfaceRepair||!audit.architecture?.ok||Object.keys(audit.architecture.families).length!==8)throw Error('Live verification failed');
+  if(response.status()!==200||errors.length||failed.length||outside.length||stats.version!==version||stats.districts!==6||stats.blocks!==36||!audit.ok||audit.groundStairs!==6||!stats.infill?.ok||stats.infill.placements<600||!stats.surfaceRepair||!audit.architecture?.ok||Object.keys(audit.architecture.families).length!==8||!stats.retrofit?.ok||stats.retrofit.assemblies<100)throw Error('Live verification failed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
